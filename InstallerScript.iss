@@ -11,10 +11,10 @@ DefaultDirName={autopf}\ecofloc
 
 ;Setup Style and Images
 WizardStyle=modern
-UninstallDisplayIcon=images\ecoflocV1.ico
-SetupIconFile=images\ecoflocV1.ico
+UninstallDisplayIcon=images\ecoflocV2.ico
+SetupIconFile=images\ecoflocV2.ico
 DisableWelcomePage=no
-WizardImageFile=images\ecoflocV1.bmp
+WizardImageFile=images\ecoflocV2.bmp
 
 ;Installer name
 OutputBaseFilename=ecofloc-installer

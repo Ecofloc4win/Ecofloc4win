@@ -3,90 +3,59 @@
 #define MyAppPublisher "Ecofloc4win team"
 #define Installer "Ecofloc4win team"
 [Setup]
-;Info de base
+;App Info
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\ecofloc
 
+;Setup Style and Images
 WizardStyle=modern
 UninstallDisplayIcon=images\ecoflocV1.ico
 SetupIconFile=images\ecoflocV1.ico
 DisableWelcomePage=no
 WizardImageFile=images\ecoflocV1.bmp
 
-;OutputBaseFilename=ecofloc-installer
+;Installer name
+OutputBaseFilename=ecofloc-installer
 
+;Files for the user to read and accept
 LicenseFile=LICENSE
 InfoBeforeFile=README.md
 
+;Type of compression for the installer
 Compression=lzma
 SolidCompression=yes
 
+;¯\_(ツ)_/¯
 Output=yes
 
+;Different language files for the installer, for now it's the compiler default, might add more later
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "ecofloc4win.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: main
-Source: "EcoflocConfigurator.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: main
 Source: "vite-server.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: ui
 Source: "ecofloc-UI\*"; DestDir: "{app}\ecofloc-UI\"; Flags: ignoreversion recursesubdirs createallsubdirs ; Components: ui
-
-; Additional individual files
-Source: "EcoflocConfigurator.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Ijwhost.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "LibreHardwareMonitorLib.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "System.Collections.Immutable.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "System.Reflection.Metadata.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "System.Text.Encoding.CodePages.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "System.Text.Encodings.Web.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "System.Threading.Channels.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Wrapper.deps.json"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Wrapper.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Wrapper.exp"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Wrapper.lib"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Wrapper.runtimeconfig.json"; DestDir: "{app}"; Flags: ignoreversion
-Source: "ecofloc4win.sys"; DestDir: "{app}"; Flags: ignoreversion
-
+Source: "ecofloc-Win\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: main
 
 [Components]
 Name: "main"; Description: "Ecofloc"; Types: full compact custom; Flags: fixed
 Name: "ui"; Description: "Web UI"; Types: full
 
+;Adds the app to the Path (bit of a pain to remove tho)
 [Registry]
-Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Flags: createvalueifdoesntexist ;Components: main
-Root: HKA; Subkey: "Software\Classes\ecofloc"; Flags: uninsdeletekey; Components: ui
-Root: HKA; Subkey: "Software\Classes\ecofloc"; ValueType: string; ValueName: ""; ValueData: "URL:Ecofloc Protocol"; Flags: uninsdeletevalue; Components: ui
-Root: HKA; Subkey: "Software\Classes\ecofloc"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Flags: uninsdeletevalue; Components: ui
-Root: HKA; Subkey: "Software\Classes\ecofloc\shell"; Flags: uninsdeletekey; Components: ui
-Root: HKA; Subkey: "Software\Classes\ecofloc\shell\open"; Flags: uninsdeletekey; Components: ui
-Root: HKA; Subkey: "Software\Classes\ecofloc\shell\open\command"; Flags: uninsdeletekey; Components: ui
-Root: HKA; Subkey: "Software\Classes\ecofloc\shell\open\command"; ValueType: string; ValueName: ""; ValueData: "\""{app}"""; Flags: uninsdeletevalue; Components: ui
-Root: HKLM; Subkey: "SOFTWARE\Ecofloc"; Flags: uninsdeletekey; Components: ui
-Root: HKLM; Subkey: "SOFTWARE\Ecofloc"; ValueType: string; ValueName: "InstallPath"; ValueData: "{app}"; Flags: uninsdeletevalue; Components: ui
-
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}";Components: main
 
 [Code]
-//suppression de ecofloc dans la path
+
 const
-  EnvironmentKey = 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment';
-  RequiredDotNetVersion = '8.0.10';
+  EnvironmentKey = 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment'; // To get the path to the... well Path
+  RequiredDotNetVersion = '8.0.10'; // Version of .NET Desktop Runtime Required to execute EcoflocConfigurator.exe
+  // Below all the possible url for each versions of a CPU
   DotNetInstallerURL64 = 'https://download.visualstudio.microsoft.com/download/pr/f398d462-9d4e-4b9c-abd3-86c54262869a/4a8e3a10ca0a9903a989578140ef0499/windowsdesktop-runtime-8.0.10-win-x64.exe'; // Replace with the actual URL
   DotNetInstallerURL86 = 'https://download.visualstudio.microsoft.com/download/pr/9836a475-66af-47eb-a726-8046c47ce6d5/ccb7d60db407a6d022a856852ef9e763/windowsdesktop-runtime-8.0.10-win-x86.exe';
   DotNetInstallerURLArm64 = 'https://download.visualstudio.microsoft.com/download/pr/c1387fab-1960-4cdc-8653-1e0333f6385a/3bd819d5f2aecff94803006a9e2c945a/windowsdesktop-runtime-8.0.10-win-arm64.exe';
-
-// Function to check if a specific version of the .NET runtime is installed
-function IsDotNetRuntimeInstalled(Version: string): Boolean;
-var
-  Key: string;
-  InstallPath: string;
-begin
-  Result := False;
-  Key := 'SOFTWARE\dotnet\Setup\InstalledVersions\x86\sharedfx\Microsoft.WindowsDesktop.App\' + Version;
-  if RegQueryStringValue(HKLM, Key, '', InstallPath) then
-    Result := True;
-end;
 
 function ProcArchi(): String;
 begin
@@ -99,24 +68,8 @@ begin
   end;
 end;
 
-// Function to download a file using PowerShell
-function DownloadFile(URL, DestPath: string): Boolean;
-var
-  PSCommand: string;
-  ExecResult: Integer;
-begin
-  Result := False;
-  PSCommand := Format(
-    'powershell -Command "& { $client = New-Object System.Net.WebClient; ' +
-    '$client.DownloadFile(''%s'', ''%s'') }"', [URL, DestPath]);
-    
-  if Exec(ExpandConstant('{cmd}'), '/C ' + PSCommand, '', SW_HIDE, ewWaitUntilTerminated, ExecResult) then
-    Result := ExecResult = 0;
-end;
 
-// Download and install .NET runtime if not found
-// Download and install .NET runtime if not found
-
+// No idea what it is it is necessary to use DownloadTemporaryFile tho
 function OnDownloadProgress(const Url, Filename: String; const Progress, ProgressMax: Int64): Boolean;
 begin
   if ProgressMax <> 0 then
@@ -126,6 +79,16 @@ begin
   Result := True;
 end;
 
+// Check if the correct version of .NET is installed
+function IsDotNetDesktopRuntimeVersionInstalled(Version: String): Boolean;
+var
+  RuntimePath: String;
+begin
+  RuntimePath := ExpandConstant('{pf}\dotnet\shared\Microsoft.WindowsDesktop.App\' + Version);
+  Result := DirExists(RuntimePath);
+end;
+
+// Download and Install .NET Desktop Runtime
 function DownloadAndInstallDotNet: Boolean;
 var
   DownloadURL: string;
@@ -144,18 +107,30 @@ begin
   else
     Result := False;
   end;
-  //DotNetInstallerPath := ExpandConstant('{tmp}\windowsdesktop-runtime-' + RequiredDotNetVersion + '-win-' + Proc + '.exe');
-  DownloadTemporaryFile(DownloadURL, 'desktop-runtime.exe', '', @OnDownloadProgress);
-  DotNetInstallerPath := ExpandConstant('{tmp}\desktop-runtime.exe');
-  
-  if not DotNetInstallerPath = '' then
-    MsgBox('Failed to download .NET Desktop Runtime (' + Proc + ').', mbError, MB_OK);
-    Exit;  
-  Exec('powershell.exe', '/i' + DotNetInstallerPath + ' /quiet /norestart', '',SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  if not IsDotNetDesktopRuntimeVersionInstalled('8.0.10') then
+  begin
+    DownloadTemporaryFile(DownloadURL, 'desktop-runtime.exe', '', @OnDownloadProgress);
+    DotNetInstallerPath := ExpandConstant('{tmp}\desktop-runtime.exe');
+    MsgBox(
+      'The .NET Desktop Runtime version 8.0.10 is required to run this application. ' +
+      'We are now going to download and prompt you to install it',
+      mbError,
+      MB_OK
+    );
+    Result := False;
+    if Exec(DotNetInstallerPath, '', '', SW_SHOWNORMAL, ewWaitUntilTerminated, ResultCode) then
+    begin
+      MsgBox('Executable ran successfully. Exit code: ' + IntToStr(ResultCode), mbInformation, MB_OK);
+    end
+    else
+    begin
+      MsgBox('Error executing the file. Exit code: ' + IntToStr(ResultCode), mbError, MB_OK);
+    end;
+  end;
 end;
 
 
-
+// The function that removes Ecofloc from the Path
 procedure RemovePath(Path: string);
 var
   Paths: string;
@@ -192,6 +167,7 @@ begin
   end;
 end;
 
+// Changes the steps of the uninstall process to be able to execute custom code
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usUninstall then
@@ -209,7 +185,7 @@ begin
     Result := True;
 end;
 
-//installation de npm et node si l'utilisateur sélectionne ui et que npm et node ne sont pas installer sur son ordinateur
+//Check if npm is installed
 function IsNpmInstalled(): Boolean;
 var
   ErrorCode: Integer;
@@ -220,32 +196,33 @@ begin
     Result := True;
 end;
 
-procedure InstallNodeAndNpm();
+//Check if node is installed
+procedure InstallNode();
 var
   ResultCode: Integer;
 begin
-  MsgBox('Node and npm are not installed. Installation of both will now start', mbInformation, MB_OK);
+  MsgBox('Node is not installed. Installation of Node will now start', mbInformation, MB_OK);
   if not Exec('msiexec.exe', '/i https://nodejs.org/dist/v18.17.1/node-v18.17.1-x64.msi /quiet /norestart', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
   begin
-    MsgBox('Unable to install Node and npm. Try again or install them manually', mbError, MB_OK);
+    MsgBox('Unable to Node. Try again or install it manually', mbError, MB_OK);
   end;
 end;
 
+// changes the step for the installation process to executes custom code
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
   begin
-    //OnDownloadProgress();
     DownloadAndInstallDotNet();
     if IsComponentSelected('ui') then
     begin
       if not IsNodeInstalled() or not IsNpmInstalled() then
       begin
-        InstallNodeAndNpm();
+        InstallNode();
       end
       else
       begin
-        MsgBox('Node and npm are already installed on your system', mbInformation, MB_OK);
+        MsgBox('Node is already installed on your system', mbInformation, MB_OK);
       end;
     end;
   end;

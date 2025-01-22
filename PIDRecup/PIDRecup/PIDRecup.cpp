@@ -339,13 +339,21 @@ json updateJson(json input, std::vector<std::pair<std::string, std::vector<int>>
         }*/
 }
 
-int main()
+int main(int argc, char* argv[]) 
 {
     // Récupérer les processus
     std::vector<ProcessInfo> processes = getProcesses();
     json output;
-    // Écrire dans un fichier JSON
+
+    // Chemin par défaut du fichier JSON
     std::string filename = "processes.json";
+
+    // Si un argument est fourni, utiliser ce chemin
+    if (argc > 1) 
+    {
+        filename = argv[1];
+    }
+
     std::ifstream f(filename);
     if (f.good()) {
         json oldJson = json::parse(f);

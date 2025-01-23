@@ -41,6 +41,7 @@
 #include "ftxui/dom/table.hpp"
 #include "ftxui/dom/node.hpp"
 #include "ftxui/screen/color.hpp"
+#include <unordered_set>
 
 using namespace ftxui;
 
@@ -57,7 +58,7 @@ void readCommand(string);
 void addProcPid(const string&, const string&);
 void addProcName(const string&, const string&);
 
-void removeProcByLineNumber(const string&);
+void removeProcByLineNumber(const string&) noexcept;
 void removeProcPid(string, string);
 
 void enable(string);
@@ -1046,55 +1047,93 @@ void addProcName(const std::string& name, const std::string& component)
 }
 
 
-void removeProcByLineNumber(const std::string& lineNumber)
+void removeProcByLineNumber(const std::string& lineNumber) noexcept
 {
 	try
 	{
 		int line = std::stoi(lineNumber);
-
 		if (line < 0)
 		{
-			std::cout << "Error: Line number cannot be negative." << std::endl;
+			std::cerr << "Error: Line number cannot be negative." << std::endl;
 			return;
 		}
 
 		std::unique_lock<std::mutex> lock(data_mutex);
-
-		if (line < monitoringData.size())
+		if (line >= monitoringData.size())
 		{
-			// Remove the process from the comp map
-			const auto& data = monitoringData[line];
-			for (const auto& pid : data.getPids())
+			std::cerr << "Error: Line number is out of range." << std::endl;
+			return;
+		}
+
+		// Store PIDs to remove before modifying containers
+		const auto& data = monitoringData[line];
+		std::unordered_set<unsigned int> pidsToRemove;
+		pidsToRemove.reserve(data.getPids().size());  // Pre-allocate space
+
+		for (const auto& pid : data.getPids())
+		{
+			pidsToRemove.insert(pid);
+		}
+
+		// Track components that will be affected for more detailed logging
+		std::vector<std::string> affectedComponents;
+
+		// More efficient removal from comp
+		for (auto& [key, value] : comp)
+		{
+			auto& processes = value.first;
+			auto originalSize = processes.size();
+
+			// Use erase-remove idiom with an unordered_set for O(1) lookup
+			processes.erase(
+				std::remove_if(processes.begin(), processes.end(),
+					[&pidsToRemove](const process& p) {
+						return pidsToRemove.count(std::stoi(p.getPid())) > 0;
+					}),
+				processes.end()
+			);
+
+			// If processes were removed from this component, log it
+			if (processes.size() < originalSize)
 			{
-				for (auto& [key, value] : comp)
-				{
-					auto& processes = value.first;
-					processes.erase(std::remove_if(processes.begin(), processes.end(),
-						[&pid](const process& p) { return p.getPid() == std::to_string(pid); }), processes.end());
-				}
+				affectedComponents.push_back(key);
 			}
+		}
 
-			// Remove the process from monitoringData
-			monitoringData.erase(monitoringData.begin() + line);
-			new_data_cv.notify_all(); // Notify waiting threads
-			std::cout << "Process has been removed." << std::endl;
-		}
-		else
+		// Remove from monitoringData
+		monitoringData.erase(monitoringData.begin() + line);
+
+		// Optional: Reduce memory footprint
+		monitoringData.shrink_to_fit();
+
+		// Atomic updates with memory ordering
+		new_data_cpu.store(true, std::memory_order_release);
+		new_data_gpu.store(true, std::memory_order_release);
+		new_data_sd.store(true, std::memory_order_release);
+		new_data_nic.store(true, std::memory_order_release);
+
+		// Enhanced logging
+		std::cout << "Process has been removed from line " << line
+			<< ". Affected components: ";
+		for (const auto& component : affectedComponents)
 		{
-			std::cout << "Error: Line number is out of range." << std::endl;
+			std::cout << component << " ";
 		}
+		std::cout << std::endl;
 	}
 	catch (const std::invalid_argument& e)
 	{
-		std::cout << "Error: Invalid line number. Must be a number." << std::endl;
+		std::cerr << "Error: Invalid line number. Must be a number." << std::endl;
 	}
 	catch (const std::out_of_range& e)
 	{
-		std::cout << "Error: Line number is too large." << std::endl;
+		std::cerr << "Error: Line number is too large." << std::endl;
+	}
+	catch (...)
+	{
+		std::cerr << "Unexpected error during process removal." << std::endl;
 	}
 }
-
-
 
 void enable(string component)
 {

@@ -61,7 +61,7 @@ void addProcName(const string&, const string&);
 void removeProcByLineNumber(const string&) noexcept;
 void removeProcPid(string, string);
 
-void enable(string);
+void enable(const string&, const string&);
 void disable(string);
 
 std::wstring getLocalizedCounterPath(const std::wstring& processName, const std::string& counterName);
@@ -775,9 +775,9 @@ void readCommand(string commandHandle)
 	switch (actions[chain[0]])  //see line 70
 	{
 	case 1: //to do
-		if (chain.size() == 2)
+		if (chain.size() == 3)
 		{
-			enable(chain[1]);
+			enable(chain[1], chain[2]);
 		}
 		else
 		{
@@ -1135,18 +1135,71 @@ void removeProcByLineNumber(const std::string& lineNumber) noexcept
 	}
 }
 
-void enable(string component)
+void enable(const string& lineNumber, const string& component)
 {
-	if (!comp[component].second)
-	{
-		comp[component].second = true;
-		cout << component << " is now enable" << endl;
+	enum ComponentType { CPU, GPU, SD, NIC };
+	std::unordered_map<std::string, ComponentType> comp = {
+		{ "CPU", ComponentType::CPU },
+		{ "GPU", ComponentType::GPU },
+		{ "SD", ComponentType::SD },
+		{ "NIC", ComponentType::NIC }
+	};
+
+	try {
+		int line = std::stoi(lineNumber);
+		if (line < 0)
+		{
+			std::cerr << "Error: Line number cannot be negative." << std::endl;
+			return;
+		}
+
+		std::unique_lock<std::mutex> lock(data_mutex);
+		if (line >= monitoringData.size())
+		{
+			std::cerr << "Error: Line number is out of range." << std::endl;
+			return;
+		}
+
+		auto& data = monitoringData[line];
+		data.enableComponent(component);
+
+		auto it = comp.find(component);
+		if (it != comp.end())
+		{
+			it->second;
+		}
+
+		switch (it->second)
+		{
+		case CPU:
+			new_data_cpu.store(true, std::memory_order_release);
+			break;
+		case GPU:
+			new_data_gpu.store(true, std::memory_order_release);
+			break;
+		case SD:
+			new_data_sd.store(true, std::memory_order_release);
+			break;
+		case NIC:
+			new_data_nic.store(true, std::memory_order_release);
+			break;
+		}
+
+		std::cout << "Component " << component << " has been enabled for process " << data.getName() << " at line " << line << std::endl;
+
 	}
-	else
+	catch (const std::invalid_argument& e)
 	{
-		cout << component << " was already enable" << endl;
+		std::cerr << "Error: Invalid line number. Must be a number." << std::endl;
 	}
-	//to do enable component
+	catch (const std::out_of_range& e)
+	{
+		std::cerr << "Error: Line number is too large." << std::endl;
+	}
+	catch (...)
+	{
+		std::cerr << "Unexpected error during process removal." << std::endl;
+	}
 }
 
 void disable(string component)

@@ -66,6 +66,7 @@ void disable(const string&, const string&);
 
 std::wstring getLocalizedCounterPath(const std::wstring& processName, const std::string& counterName);
 
+// Actions map for command handling
 unordered_map<string, int> actions =
 {
 	{"enable", 1},
@@ -770,9 +771,9 @@ void readCommand(string commandHandle)
 		chain.push_back(commandHandle);
 	}
 
-	switch (actions[chain[0]])  //see line 70
+	switch (actions[chain[0]])
 	{
-	case 1: //to do
+	case 1:
 		if (chain.size() == 3)
 		{
 			enable(chain[1], chain[2]);
@@ -783,7 +784,7 @@ void readCommand(string commandHandle)
 		}
 		break;
 
-	case 2://to do
+	case 2:
 		if (chain.size() == 3)
 		{
 			disable(chain[1], chain[2]);
@@ -843,10 +844,6 @@ void readCommand(string commandHandle)
 			if (all_of(chain[1].begin(), chain[1].end(), ::isdigit))
 			{
 				removeProcByLineNumber(chain[1]);
-				//if (chain[3] == "CPU" || chain[3] == "GPU" || chain[3] == "SD" || chain[3] == "NIC")
-				//{
-				//    removeProcPid(chain[2], chain[3]); //to do: check if component
-				//}
 			}
 			else
 			{
@@ -879,7 +876,6 @@ void readCommand(string commandHandle)
 		break;
 
 	case 6:
-		// to do
 		break;
 
 	default:
@@ -1036,7 +1032,6 @@ void addProcName(const std::string& name, const std::string& component)
 				break;
 			}
 		}
-		//new_data_cv.notify_all();
 	}
 	else
 	{

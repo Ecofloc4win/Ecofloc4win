@@ -1,3 +1,5 @@
+import DynamicGraph from './ClassDynamicGraph'; 
+
 let precedentTimeStamp = 0;
 let totalW = 0;
 let mainIdGraph = "";

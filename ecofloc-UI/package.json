@@ -10,7 +10,8 @@
     "compileCss": "npx tailwindcss -i ./src/Css/input.css -o ./src/Css/output.css --watch",
     "buildApplication": "pkg start.js --targets node18-win-x64 --output ../vite-server.exe",
     "downloadPKG": "npm install -g pkg",
-    "execApp": "cd .. && ./vite-server.exe fix"
+    "execApp": "cd .. && ./vite-server.exe fix",
+    "test": "vitest"
   },
   "devDependencies": {
     "cors": "^2.8.5",
@@ -32,6 +33,7 @@
     ]
   },
   "dependencies": {
-    "punycode": "^2.3.1"
+    "punycode": "^2.3.1",
+    "vitest": "^3.0.4"
   }
 }

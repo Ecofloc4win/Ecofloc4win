@@ -82,3 +82,5 @@ class DynamicGraph {
     }
 
 }
+
+export default DynamicGraph;

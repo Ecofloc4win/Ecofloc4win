@@ -43,6 +43,7 @@ public:
 	std::vector<int> getPids() const;
 
 	void enableComponent(const std::string& component);
+	void disableComponent(const std::string& component);
 
 	void setCPUEnabled(bool enabled);
 	void setGPUEnabled(bool enabled);

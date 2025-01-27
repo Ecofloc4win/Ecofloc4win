@@ -52,6 +52,26 @@ void MonitoringData::enableComponent(const std::string& componentStr)
 	}
 }
 
+void MonitoringData::disableComponent(const std::string& componentStr)
+{
+	ComponentType component = stringToComponentType(componentStr);
+	switch (component)
+	{
+	case h_CPU:
+		cpuEnabled = false;
+		break;
+	case h_GPU:
+		gpuEnabled = false;
+		break;
+	case h_SD:
+		sdEnabled = false;
+		break;
+	case h_NIC:
+		nicEnabled = false;
+		break;
+	}
+}
+
 void MonitoringData::setCPUEnabled(bool enabled)
 {
 	cpuEnabled = enabled;

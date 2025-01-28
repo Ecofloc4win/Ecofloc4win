@@ -1,5 +1,4 @@
 import DynamicGraph from './ClassDynamicGraph'; 
-
 let precedentTimeStamp = 0;
 let totalW = 0;
 let mainIdGraph = "";
@@ -105,14 +104,12 @@ const updatePlots = (data) => {
 
 // Initialize graphs and set periodic updates
 renderInitialView();
-let graphCPU = new DynamicGraph("graphCPU", "rgb(248, 113, 113)");
-let graphGPU = new DynamicGraph("graphGPU", "rgb(74, 222, 128)");
-let graphNIC = new DynamicGraph("graphNIC", "rgb(96, 165, 250)");
-let graphSD = new DynamicGraph("graphSD", "rgb(129, 140, 248)");
+export let graphCPU = new DynamicGraph("graphCPU", "rgb(248, 113, 113)");
+export let graphGPU = new DynamicGraph("graphGPU", "rgb(74, 222, 128)");
+export let graphNIC = new DynamicGraph("graphNIC", "rgb(96, 165, 250)");
+export let graphSD = new DynamicGraph("graphSD", "rgb(129, 140, 248)");
 let graphTOTAL = new DynamicGraph("graphTOTAL", "rgb(192, 132, 252)");
 
-startButton = document.querySelector("#start-button");
-stopButton = document.querySelector("#stop-button");
 
 startButton.addEventListener("click", () => {
     setInterval(readFile, 500);

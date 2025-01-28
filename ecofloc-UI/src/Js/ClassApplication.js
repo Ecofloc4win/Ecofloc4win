@@ -15,3 +15,5 @@ class Application {
         return this.categorie;
     }
 }
+
+export default Application;

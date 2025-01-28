@@ -443,19 +443,15 @@
             },
             {
                 "checked": false,
-                "numeroPid": 19744
-            },
-            {
-                "checked": false,
                 "numeroPid": 20008
             },
             {
                 "checked": false,
-                "numeroPid": 15808
+                "numeroPid": 14616
             },
             {
                 "checked": false,
-                "numeroPid": 16744
+                "numeroPid": 8628
             }
         ]
     },
@@ -605,14 +601,6 @@
             },
             {
                 "checked": false,
-                "numeroPid": 2704
-            },
-            {
-                "checked": false,
-                "numeroPid": 13964
-            },
-            {
-                "checked": false,
                 "numeroPid": 14284
             },
             {
@@ -629,7 +617,7 @@
             },
             {
                 "checked": false,
-                "numeroPid": 12952
+                "numeroPid": 18364
             }
         ]
     },
@@ -833,7 +821,7 @@
             },
             {
                 "checked": false,
-                "numeroPid": 11456
+                "numeroPid": 13584
             }
         ]
     },
@@ -994,14 +982,6 @@
             {
                 "checked": false,
                 "numeroPid": 2248
-            },
-            {
-                "checked": false,
-                "numeroPid": 18284
-            },
-            {
-                "checked": false,
-                "numeroPid": 10720
             }
         ]
     },
@@ -1087,10 +1067,6 @@
             },
             {
                 "checked": false,
-                "numeroPid": 6612
-            },
-            {
-                "checked": false,
                 "numeroPid": 6136
             },
             {
@@ -1103,15 +1079,7 @@
             },
             {
                 "checked": false,
-                "numeroPid": 18344
-            },
-            {
-                "checked": false,
                 "numeroPid": 1776
-            },
-            {
-                "checked": false,
-                "numeroPid": 11804
             },
             {
                 "checked": false,
@@ -1120,6 +1088,14 @@
             {
                 "checked": false,
                 "numeroPid": 14312
+            },
+            {
+                "checked": false,
+                "numeroPid": 11784
+            },
+            {
+                "checked": false,
+                "numeroPid": 15800
             }
         ]
     },
@@ -1419,24 +1395,6 @@
     },
     {
         "categorie": "",
-        "name": "powershell.exe",
-        "pids": [
-            {
-                "checked": false,
-                "numeroPid": 3992
-            },
-            {
-                "checked": false,
-                "numeroPid": 7688
-            },
-            {
-                "checked": false,
-                "numeroPid": 7992
-            }
-        ]
-    },
-    {
-        "categorie": "",
         "name": "language_server_windows_x64.exe",
         "pids": [
             {
@@ -1467,67 +1425,11 @@
     },
     {
         "categorie": "",
-        "name": "node.exe",
+        "name": "powershell.exe",
         "pids": [
             {
                 "checked": false,
-                "numeroPid": 1964
-            },
-            {
-                "checked": false,
-                "numeroPid": 13308
-            },
-            {
-                "checked": false,
-                "numeroPid": 16912
-            },
-            {
-                "checked": false,
-                "numeroPid": 20156
-            }
-        ]
-    },
-    {
-        "categorie": "",
-        "name": "cmd.exe",
-        "pids": [
-            {
-                "checked": false,
-                "numeroPid": 8968
-            },
-            {
-                "checked": false,
-                "numeroPid": 9468
-            },
-            {
-                "checked": false,
-                "numeroPid": 10444
-            },
-            {
-                "checked": false,
-                "numeroPid": 14484
-            },
-            {
-                "checked": false,
-                "numeroPid": 19684
-            },
-            {
-                "checked": false,
-                "numeroPid": 12604
-            }
-        ]
-    },
-    {
-        "categorie": "",
-        "name": "esbuild.exe",
-        "pids": [
-            {
-                "checked": false,
-                "numeroPid": 2596
-            },
-            {
-                "checked": false,
-                "numeroPid": 3192
+                "numeroPid": 7992
             }
         ]
     },
@@ -1561,7 +1463,7 @@
             },
             {
                 "checked": false,
-                "numeroPid": 12296
+                "numeroPid": 5380
             }
         ]
     },
@@ -1624,6 +1526,36 @@
             {
                 "checked": false,
                 "numeroPid": 1712
+            }
+        ]
+    },
+    {
+        "categorie": "",
+        "name": "cmd.exe",
+        "pids": [
+            {
+                "checked": false,
+                "numeroPid": 9468
+            },
+            {
+                "checked": false,
+                "numeroPid": 15924
+            },
+            {
+                "checked": false,
+                "numeroPid": 10792
+            },
+            {
+                "checked": false,
+                "numeroPid": 18228
+            },
+            {
+                "checked": false,
+                "numeroPid": 18568
+            },
+            {
+                "checked": false,
+                "numeroPid": 17920
             }
         ]
     },
@@ -1861,25 +1793,61 @@
     },
     {
         "categorie": "",
-        "name": "vite-server.exe",
+        "name": "node.exe",
         "pids": [
             {
                 "checked": false,
-                "numeroPid": 3332
+                "numeroPid": 4160
             },
             {
                 "checked": false,
-                "numeroPid": 12828
+                "numeroPid": 19976
+            },
+            {
+                "checked": false,
+                "numeroPid": 3764
+            },
+            {
+                "checked": false,
+                "numeroPid": 18188
             }
         ]
     },
     {
         "categorie": "",
-        "name": "backgroundTaskHost.exe",
+        "name": "esbuild.exe",
         "pids": [
             {
                 "checked": false,
-                "numeroPid": 15564
+                "numeroPid": 11324
+            },
+            {
+                "checked": false,
+                "numeroPid": 8196
+            }
+        ]
+    },
+    {
+        "categorie": "",
+        "name": "vite-server.exe",
+        "pids": [
+            {
+                "checked": false,
+                "numeroPid": 16920
+            },
+            {
+                "checked": false,
+                "numeroPid": 16944
+            }
+        ]
+    },
+    {
+        "categorie": "",
+        "name": "FileCoAuth.exe",
+        "pids": [
+            {
+                "checked": false,
+                "numeroPid": 7232
             }
         ]
     },
@@ -1889,7 +1857,7 @@
         "pids": [
             {
                 "checked": false,
-                "numeroPid": 20116
+                "numeroPid": 5712
             }
         ]
     }

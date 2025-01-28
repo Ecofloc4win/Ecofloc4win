@@ -1,12 +1,17 @@
-class DynamicGraph {
-    constructor(nomGraphique) {
-        this.layout = {
-            xaxis: {
+class DynamicGraph 
+{
+    constructor(nomGraphique) 
+    {
+        this.layout = 
+        {
+            xaxis: 
+            {
                 gridcolor: 'rgba(255,255,255,0.2)',
                 tickfont: { color: 'white' },
                 range: [-30, 0]
             },
-            yaxis: {
+            yaxis: 
+            {
                 gridcolor: 'rgba(255,255,255,0.2)',
                 tickfont: { color: 'white' }
             },
@@ -25,12 +30,15 @@ class DynamicGraph {
         Plotly.newPlot(this.nomGraphique, [], this.layout, { responsive: true, displayModeBar: false });
     }
 
-    updatePlot(PID, value, time, color) {
-        
+    updatePlot(PID, value, time, color) 
+    {
         // Checks if the PID already exists otherwise create it
-        if (!this.data[PID]) {
-            if (PID !== "TOTAL") {
-                this.data[PID] = {
+        if (!this.data[PID]) 
+            {
+            if (PID !== "TOTAL") 
+            {
+                this.data[PID] = 
+                {
                     x: [],
                     y: [],
                     line: { color:color },
@@ -38,8 +46,10 @@ class DynamicGraph {
                     name: `PID ${PID}`,
                 };
             }
-            else{
-                this.data["TOTAL"] = {
+            else
+            {
+                this.data["TOTAL"] = 
+                {
                     x: [],
                     y: [],
                     line: { color: "#10b981" },
@@ -58,7 +68,8 @@ class DynamicGraph {
 
         // Checks if an index exists for this PID
         const index = this.traceIndices[PID];
-        if (index === undefined) {
+        if (index === undefined) 
+            {
             console.error(`Error: PID ${PID} not found in trace indices`);
             return;
         }
@@ -81,7 +92,8 @@ class DynamicGraph {
         );
     }
 
-    getRandomColor() {
+    getRandomColor() 
+    {
         const r = Math.floor(Math.random() * 200)+55;
         const g = Math.floor(Math.random() * 200)+55;
         const b = Math.floor(Math.random() * 200)+55;

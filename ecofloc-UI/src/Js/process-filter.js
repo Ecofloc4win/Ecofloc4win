@@ -1,11 +1,12 @@
 import Application from './ClassApplication'; 
 import { areSetsEqual } from './areSetsEqual';
+import MapperApplication from './mapperApplication';
 
-const listeProcessusHtmlElement = document.getElementById("ListeProcessus");
+const listProcessHtmlElement = document.getElementById("ListeProcessus");
 const tableFilterHtmlElement = document.getElementById("TableFilter");
 const checkBoxSelectAllProcElement = document.getElementById("SelectAllProc");
 
-let mesProcessus = [];
+let myProcesses = [];
 let setCategorie = new Set();
 
 
@@ -55,30 +56,33 @@ function makeGroupApplication(){
                     allFilterElement.checked = atLeastOne;
                     allFilterElement.indeterminate = (!all && atLeastOne); 
                 }
-                afficherListeProcessus();
+                showProcessList();
             });
         }
     }
 }
 
-function parseDataToMyProcesses(data){
-    if(data){
-        mesProcessus = [];
+function parseDataToMyProcesses(data)
+{
+    if(data)
+    {
+        myProcesses = [];
         const oldCategorie = setCategorie;
         setCategorie = new Set();
         setCategorie.add("All");
         setCategorie.add("Other");
-        data.forEach(process => {
-            let uneApplication = new Application(process.name,process.pids, process.categorie);
-            mesProcessus.push(uneApplication);
-            if(uneApplication.categorie != "") {
-                setCategorie.add(uneApplication.categorie);
+        myProcesses = MapperApplication.mapperApplicationsFromJson(data);
+        for(let aProcess of myProcesses)
+        {
+            if(aProcess.categorie != "") 
+            {
+                setCategorie.add(aProcess.categorie);
             }
-        });
+        }
         if(!areSetsEqual(oldCategorie, setCategorie)) {
             makeGroupApplication();
         }
-        afficherListeProcessus();
+        showProcessList();
     }
 }
 
@@ -97,7 +101,8 @@ fetch('../Json/process.json')
     console.error('Error:', error);
 });
 
-function getFilterCategorie(nomCategorie) {
+function getFilterCategorie(nomCategorie) 
+{
     for(let filter of tableFilterHtmlElement.querySelectorAll("input")){
         if(filter.value == nomCategorie){
             return filter.checked;
@@ -107,7 +112,8 @@ function getFilterCategorie(nomCategorie) {
     return otherFilterElement.checked;
 }
 
-function changePidState(nomProc, pidProc, etat) {
+function changePidState(nomProc, pidProc, etat) 
+{
     const serverUrl = 'http://localhost:3030/changePidState';
     fetch(serverUrl, {
         method: 'POST',
@@ -131,19 +137,25 @@ function changePidState(nomProc, pidProc, etat) {
 
 
 
-function afficherListeProcessus() {
-    while (listeProcessusHtmlElement.firstChild) {
-        listeProcessusHtmlElement.removeChild(listeProcessusHtmlElement.firstChild);
+function showProcessList() 
+{
+    while (listProcessHtmlElement.firstChild) 
+    {
+        listProcessHtmlElement.removeChild(listProcessHtmlElement.firstChild);
     }
     const searchText = document.getElementById("SearchBar").value == "" ? "":document.getElementById("SearchBar").value.toLowerCase();
     let atLeastOneChecked = false;
     let allChecked = true;
-    for(let unProcessus of mesProcessus){
-        if (!unProcessus.getName().toLowerCase().includes(searchText)){
+    for(let unProcessus of myProcesses)
+    {
+        if (!unProcessus.getName().toLowerCase().includes(searchText))
+        {
             continue;
         }
-        if(getFilterCategorie(unProcessus.categorie)){
-            for(let unPid of unProcessus.getListePid()){
+        if(getFilterCategorie(unProcessus.categorie))
+        {
+            for(let unPid of unProcessus.getListePid())
+            {
                 // Create html elements for pids
                 const lineDiv = document.createElement("div");
                 lineDiv.className = "line";
@@ -158,9 +170,12 @@ function afficherListeProcessus() {
                 const inputCheckbox = document.createElement("input");
                 inputCheckbox.type = "checkbox";
                 col2Div.textContent = unPid["numeroPid"];
-                if(unPid["checked"]){
+                if(unPid["checked"])
+                {
                     atLeastOneChecked = true;
-                }else{
+                }
+                else
+                {
                     allChecked = false;
                 }
                 inputCheckbox.checked = unPid["checked"];
@@ -179,7 +194,7 @@ function afficherListeProcessus() {
                 lineDiv.appendChild(col2Div);
 
                 // Add line to parent element
-                listeProcessusHtmlElement.appendChild(lineDiv);
+                listProcessHtmlElement.appendChild(lineDiv);
             }
         }
     }
@@ -187,30 +202,37 @@ function afficherListeProcessus() {
     checkBoxSelectAllProcElement.indeterminate = (!allChecked && atLeastOneChecked); 
 }
 
-function selectAllPid(etat) {
+function selectAllPid(etat) 
+{
     const searchText = document.getElementById("SearchBar").value.toLowerCase();
     let listePidAChanger = new Set();
 
     // Collect all visible processes based on search and filters
-    for(let unProcessus of mesProcessus) {
-        if (searchText && !unProcessus.getName().toLowerCase().includes(searchText)) {
+    for(let unProcessus of myProcesses) 
+    {
+        if (searchText && !unProcessus.getName().toLowerCase().includes(searchText)) 
+        {
             continue;
         }
-        if(!getFilterCategorie(unProcessus.categorie)) {
+        if(!getFilterCategorie(unProcessus.categorie)) 
+        {
             continue;
         }
         listePidAChanger.add(unProcessus.getName());
     }
 
     // Update UI immediately for better responsiveness
-    for(let unProcessus of mesProcessus) {
-        if(listePidAChanger.has(unProcessus.getName())) {
-            for(let unPid of unProcessus.getListePid()) {
+    for(let unProcessus of myProcesses) 
+    {
+        if(listePidAChanger.has(unProcessus.getName())) 
+        {
+            for(let unPid of unProcessus.getListePid()) 
+            {
                 unPid.checked = etat;
             }
         }
     }
-    afficherListeProcessus();
+    showProcessList();
 
     // Send update to server
     fetch('http://localhost:3030/updateProcessListState', {
@@ -261,5 +283,5 @@ eventSource.onmessage = (event) => {
 };
 
 document.getElementById("SearchBar").addEventListener("keyup", () => {
-    afficherListeProcessus();
+    showProcessList();
 });

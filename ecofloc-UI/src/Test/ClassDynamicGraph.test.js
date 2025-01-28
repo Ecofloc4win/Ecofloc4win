@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import DynamicGraph from '../Js/ClassDynamicGraph';  // Importation avec ES6 (modifié pour Vitest)
+import DynamicGraph from '../Js/ClassDynamicGraph';
 
-// Mock de Plotly
 global.Plotly = {
     newPlot: vi.fn(),
     addTraces: vi.fn(),
@@ -11,48 +10,58 @@ global.Plotly = {
 describe('DynamicGraph', () => {
     let graph;
 
-    // Initialisation avant chaque test
     beforeEach(() => {
-        graph = new DynamicGraph('graphDiv'); // Crée une nouvelle instance de DynamicGraph
+        graph = new DynamicGraph('graphDiv'); 
+        vi.clearAllMocks();
     });
 
     it('ajout d\'une trace pour un nouveau PID', () => {
+        // GIVEN
         const PID = '123';
         const initialTraces = Object.keys(graph.traceIndices).length;
 
-        // Mise à jour du graphique avec un nouveau PID
+        // WHEN
         graph.updatePlot(PID, 10, 1, 'blue');
 
-        // Vérifie que la trace a bien été ajoutée
+        // THEN
         expect(Object.keys(graph.traceIndices).length).toBe(initialTraces + 1);
-        expect(graph.traceIndices[PID]).toBe(0);  // Le PID "123" devrait avoir l'index 0
-        expect(Plotly.addTraces).toHaveBeenCalledTimes(1); // Vérifie que Plotly.addTraces a été appelé une fois
+        expect(graph.data[PID].y[0]).toBe(10);
+        expect(graph.traceIndices[PID]).toBe(0);
+        expect(Plotly.addTraces).toHaveBeenCalledTimes(1);
     });
 
     it('ajout de la trace pour le PID TOTAL', () => {
-        // Test pour le PID TOTAL
-        graph.updatePlot('TOTAL', 50, 1, 'green');
+        // GIVEN
+        const PID = 'TOTAL';
+        const value = 50;
+        
+        // WHEN
+        graph.updatePlot(PID, value, 1, 'green');
 
-        // Vérifie que la trace TOTAL est bien ajoutée avec l'index approprié
-        expect(Object.keys(graph.traceIndices).length).toBe(1);  // Total devrait être la première trace
-        expect(graph.traceIndices['TOTAL']).toBe(0);
+        // THEN
+        expect(graph.data[PID].y[0]).toBe(value);
+        expect(Object.keys(graph.traceIndices).length).toBe(1);
+        expect(graph.traceIndices[PID]).toBe(0);
+        expect(Plotly.addTraces).toHaveBeenCalledTimes(1);
     });
 
     it('mise à jour d\'une trace existante', () => {
+        //GIVEN
         const PID = '456';
-        graph.updatePlot(PID, 20, 1, 'red');
 
-        // Mise à jour avec une nouvelle valeur
+        // WHEN
+        graph.updatePlot(PID, 20, 1, 'red');
         graph.updatePlot(PID, 30, 2, 'red');
 
-        // Vérifie que la nouvelle valeur a bien été ajoutée à la trace
+        // THEN
         expect(graph.data[PID].y).toEqual([20, 30]);
     });
 
     it('génération d\'une couleur aléatoire', () => {
+        // WHEN
         const color = graph.getRandomColor();
-
-        // Vérifie si la couleur est une chaîne de caractères de format rgb(r, g, b)
+        
+        // THEN
         expect(color).toMatch(/^rgb\(\d{1,3}, \d{1,3}, \d{1,3}\)$/);
     });
 });

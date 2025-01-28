@@ -1,6 +1,5 @@
 class DynamicGraph {
     constructor(nomGraphique) {
-        // Configuration du layout pour le graphique
         this.layout = {
             xaxis: {
                 gridcolor: 'rgba(255,255,255,0.2)',
@@ -18,18 +17,17 @@ class DynamicGraph {
             showlegend: false
         };
 
-        //this.key = 0;
-        this.data = {}; // Stockage des séries par PID
-        this.traceIndices = {}; // Lien entre PID et index des traces
+        this.data = {}; // PID series storage
+        this.traceIndices = {}; // Link between PID and trace index
         this.nomGraphique = nomGraphique;
 
-        // Initialisation du graphique
+        // Graph initialization
         Plotly.newPlot(this.nomGraphique, [], this.layout, { responsive: true, displayModeBar: false });
     }
 
     updatePlot(PID, value, time, color) {
         
-        // Vérifie si le PID existe déjà
+        // Checks if the PID already exists otherwise create it
         if (!this.data[PID]) {
             if (PID !== "TOTAL") {
                 this.data[PID] = {
@@ -49,23 +47,23 @@ class DynamicGraph {
                 };
             }
             
-            // Ajoute une nouvelle trace pour ce PID
+            // Adds a new trace for this PID
             Plotly.addTraces(this.nomGraphique, this.data[PID]);
-            this.traceIndices[PID] = Object.keys(this.traceIndices).length; // Associe un index à ce PID
+            this.traceIndices[PID] = Object.keys(this.traceIndices).length; // Associate an index with this PID
         }
 
-        // Ajoute la valeur et le timestamp à la série correspondante
+        // Adds the value and timestamp to the corresponding series
         this.data[PID].x.push(time);
         this.data[PID].y.push(value);
 
-        // Vérifie si un index existe pour ce PID
+        // Checks if an index exists for this PID
         const index = this.traceIndices[PID];
         if (index === undefined) {
             console.error(`Erreur : PID ${PID} non trouvé dans les indices des traces`);
             return;
         }
 
-        // Met à jour la trace correspondante avec les deux tableaux x et y
+        // Updates the corresponding trace with the two tables x and y
         Plotly.update(
             this.nomGraphique, 
             { 

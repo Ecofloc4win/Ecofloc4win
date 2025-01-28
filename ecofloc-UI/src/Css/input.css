@@ -3,7 +3,6 @@
 @tailwind utilities;
 
 
-/* Défilement élégant */
 ::-webkit-scrollbar {
   width: 10px;
 }
@@ -117,9 +116,9 @@
   border-radius: 0.375rem;
 }
 
-/* Style pour les tableaux process-tab et group-tab */
+/* Style for process-tab and group-tab tables */
 .custom-table {
-  border: 1px solid #3f3f46; /* Ajout d'une bordure fine */
+  border: 1px solid #3f3f46; /* Add a thin border */
   border-radius: 8px;
   overflow: hidden;
   display: flex;
@@ -130,7 +129,7 @@
   display: flex;
   flex-direction: row;
   gap: 0.5rem;
-  background-color: #27272a; /* Couleur sombre pour le header */
+  background-color: #27272a; /* Dark color for header */
   color: #ffffff;
   font-weight: bold;
   font-size: 1rem;
@@ -145,10 +144,10 @@
 .custom-tbody {
   display: flex;
   flex-direction: column;
-  background-color: #18181b; /* Corps légèrement plus clair */
-  color: #d1d5db; /* Texte gris clair */
+  background-color: #18181b; /* Slightly lighter body */
+  color: #d1d5db; /* Light grey text */
   overflow-y: auto;
-  max-height: 150px; /* Défilement si nécessaire */
+  max-height: 150px; /* Scroll if necessary */
   min-height: 150px;
 }
 
@@ -162,11 +161,11 @@
 }
 
 .custom-tbody .line:nth-child(even) {
-  background-color: #232323; /* Alternance pour meilleure lisibilité */
+  background-color: #232323; /* Alternating for better readability */
 }
 
 .custom-tbody .line:hover {
-  background-color: #374151; /* Survol */
+  background-color: #374151; /* Overview */
 }
 
 .titleHeader:hover {
@@ -191,7 +190,7 @@
 }
 
 .col-2 input[type="checkbox"], .green-checkbox {
-  accent-color: #10b981; /* Vert Tailwind */
+  accent-color: #10b981; /* Tailwind Green */
 }
 
 .col-2.line{

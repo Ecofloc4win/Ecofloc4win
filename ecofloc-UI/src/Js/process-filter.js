@@ -84,15 +84,13 @@ function parseDataToMyProcesses(data){
 
 fetch('../Json/process.json')
 .then(response => {
-    // Vérifier si la réponse est correcte
+    // Check if the answer is correct
     if (!response.ok) {
         throw new Error('Erreur de chargement du fichier JSON');
     }
-    return response.json();  // Parse le JSON
+    return response.json(); // return the JSON
 })
 .then(data => {
-
-    // Afficher chaque processus dans la liste
     parseDataToMyProcesses(data);
 })
 .catch(error => {
@@ -110,22 +108,17 @@ function getFilterCategorie(nomCategorie) {
 }
 
 function changePidState(nomProc, pidProc, etat) {
-    // Adresse de votre serveur Node.js
     const serverUrl = 'http://localhost:3030/changePidState';
-    // Envoi d'une requête POST au serveur
     fetch(serverUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        // Ajoutez les données
         body: JSON.stringify({ nomProc, pidProc, etat }),
     })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                //console.log('Script exécuté avec succès');
-            } else {
+            if (!data.success) {
                 console.error('Erreur lors de l\'exécution :', data.message);
                 alert(`Erreur : ${data.message}`);
             }
@@ -151,7 +144,7 @@ function afficherListeProcessus() {
         }
         if(getFilterCategorie(unProcessus.categorie)){
             for(let unPid of unProcessus.getListePid()){
-                // Créer les éléments
+                // Create html elements for pids
                 const lineDiv = document.createElement("div");
                 lineDiv.className = "line";
 
@@ -179,13 +172,13 @@ function afficherListeProcessus() {
                     const dataNumeroPid = event.target.getAttribute("data-numero-pids");
                     changePidState(dataNomProcessus, dataNumeroPid,clickedCheckbox.checked);
                 });
-                col2Div.appendChild(inputCheckbox); // Ajouter la case à cocher à col-2
+                col2Div.appendChild(inputCheckbox); 
 
-                // Ajouter les colonnes à la ligne
+                // Add columns to line
                 lineDiv.appendChild(col1Div);
                 lineDiv.appendChild(col2Div);
 
-                // Ajouter la ligne à l'élément parent
+                // Add line to parent element
                 listeProcessusHtmlElement.appendChild(lineDiv);
             }
         }
@@ -267,11 +260,6 @@ eventSource.onmessage = (event) => {
     }
 };
 
-eventSource.onerror = () => {
-    //console.error('Erreur de connexion au serveur SSE');
-};
-
 document.getElementById("SearchBar").addEventListener("keyup", () => {
-    const searchText = document.getElementById("SearchBar").value;
     afficherListeProcessus();
 });

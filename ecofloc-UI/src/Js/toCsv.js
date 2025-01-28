@@ -20,7 +20,7 @@ document.getElementById('exportCSV').addEventListener('click', async () => {
         CPU: Object.fromEntries(
             Object.entries(graphCPU.data).map(([pid, data]) => [pid,
             {
-                // Ajuste chaque élément de la liste x pour inclure la date de début
+                // Adjust each element of the x list to include the start date
                 x: data.x.map(timestamp => timestamp + monitoringStartTime) || [],
                 y: data.y || [],
             },])),
@@ -58,7 +58,6 @@ document.getElementById('exportCSV').addEventListener('click', async () => {
             throw new Error(`Export failed: ${errorText}`);
         }
         const blob = await response.blob();
-        console.log('Received blob:', blob);
 
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');

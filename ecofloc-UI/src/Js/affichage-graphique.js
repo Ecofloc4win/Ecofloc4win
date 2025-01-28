@@ -1,19 +1,7 @@
 import DynamicGraph from './ClassDynamicGraph'; 
 let precedentTimeStamp = 0;
 let totalW = 0;
-let mainIdGraph = "";
-const listTab = document.getElementById("list-tab");
-const flexGraphique = document.getElementById("flex-graphique");
 let numSec = 0;
-
-const componentDictionary = {
-    "CPU": "CPU",
-    "GPU": "GPU",
-    "NIC": "NIC",
-    "SD": "SD",
-    "TOTAL": "Total Consumption",
-    "RAM": "RAM"
-};
 
 // Read the JSON file and update plots
 const readFile = () => {
@@ -33,7 +21,6 @@ const readFile = () => {
 const updatePlots = (data) => {
     
     totalW = 0;
-    //console.log(data);
     data.apps.forEach(app => {
 
         graphCPU.updatePlot(app["pid"], app["power_w_CPU"], numSec, app["color"]);

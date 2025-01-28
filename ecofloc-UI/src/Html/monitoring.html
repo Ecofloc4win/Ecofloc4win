@@ -78,7 +78,7 @@
             <aside id="options">
                 <!-- Ipt-TimeStamp -->
                 <div id="input_ts" class="mt-4 sidebar-transition">
-                    <label class="block mb-2">Intervalle (ms)</label>
+                    <label class="block mb-2">Interval (ms)</label>
                     <input type="number" min="500" value="1000" max="30000" step="250" class="w-full bg-zinc-700 text-white p-2 rounded-md">
                 </div>
                 <!-- Play/Stop buttons -->
@@ -156,16 +156,12 @@
 
 
         function executeScript() {
-        // Adresse de votre serveur Node.js
         const serverUrl = 'http://localhost:3030/execute';
-
-        // Envoi d'une requête POST au serveur
         fetch(serverUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            // Ajoutez des données si nécessaire
             body: JSON.stringify({}),
         })
             .then(response => response.json())
@@ -182,8 +178,7 @@
                 alert('Impossible de contacter le serveur.');
             });
         }
-
-        // Définir la fonction stopExecutable en dehors de executeScript
+        
         function stopExecutable() {
             fetch('http://localhost:3030/stop', {
                 method: 'POST',

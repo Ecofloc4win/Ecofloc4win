@@ -1,7 +1,7 @@
 const { exec } = require('child_process');
 const readline = require('readline');
 
-// Fonction pour exécuter une commande en tant que promesse
+// Function to execute a command as a promise
 function runCommand(command, description) {
   return new Promise((resolve, reject) => {
     console.log(`Starting: ${description}`);
@@ -26,26 +26,26 @@ function runCommand(command, description) {
   });
 }
 
-// Fonction principale pour exécuter les étapes séquentiellement
+// Main function to execute steps sequentially
 async function main() {
   try {
-    // Étape 1 : Installer / mettre à jour les packages
+    // Step 1: Install/update packages
     await runCommand('npm ci --prefix ./ecofloc-UI', 'Install/Update Packages');
 
-    // Étape 2 : Ouvrir le navigateur
-    await runCommand('start http://localhost:5173/src/', 'Open Browser');
-
-    // Étape 3 : Démarrer le serveur Node.js
+    // Step 2: Start the Node.js server
     runCommand('node ./ecofloc-UI/src/server.cjs', 'Node.js Server');
 
-    // Étape 4 : Démarrer le serveur Vite
+    // Step 3: Start the Vite server
     runCommand('npm run dev --prefix ./ecofloc-UI', 'Vite Development Server');
+
+    // Step 4: Open the browser
+    await runCommand('start http://localhost:5173/src/', 'Open Browser');
 
 
   } catch (err) {
     console.error('An error occurred during execution:', err.message);
   } finally {
-    // Garder la fenêtre de terminal ouverte
+    // Keep terminal window open
     readline
       .createInterface({
         input: process.stdin,
@@ -57,5 +57,5 @@ async function main() {
   }
 }
 
-// Lancer le script principal
+// Run the main script
 main();

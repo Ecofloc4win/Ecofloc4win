@@ -59,7 +59,7 @@ class DynamicGraph {
         // Checks if an index exists for this PID
         const index = this.traceIndices[PID];
         if (index === undefined) {
-            console.error(`Erreur : PID ${PID} non trouvé dans les indices des traces`);
+            console.error(`Error: PID ${PID} not found in trace indices`);
             return;
         }
 

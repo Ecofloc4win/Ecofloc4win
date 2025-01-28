@@ -86,7 +86,7 @@ fetch('../Json/process.json')
 .then(response => {
     // Check if the answer is correct
     if (!response.ok) {
-        throw new Error('Erreur de chargement du fichier JSON');
+        throw new Error('Error loading JSON file');
     }
     return response.json(); // return the JSON
 })
@@ -94,7 +94,7 @@ fetch('../Json/process.json')
     parseDataToMyProcesses(data);
 })
 .catch(error => {
-    console.error('Erreur:', error);
+    console.error('Error:', error);
 });
 
 function getFilterCategorie(nomCategorie) {
@@ -119,13 +119,13 @@ function changePidState(nomProc, pidProc, etat) {
         .then(response => response.json())
         .then(data => {
             if (!data.success) {
-                console.error('Erreur lors de l\'exécution :', data.message);
-                alert(`Erreur : ${data.message}`);
+                console.error('Error during execution :', data.message);
+                alert(`Error : ${data.message}`);
             }
         })
         .catch(error => {
-            console.error('Erreur réseau ou serveur :', error);
-            alert('Impossible de contacter le serveur.');
+            console.error('Network or server error :', error);
+            alert('Unable to contact the server.');
         });
 }
 
@@ -247,7 +247,7 @@ eventSource.onmessage = (event) => {
             const data = JSON.parse(event.data);
             if(!data)
             {
-                console.error("Erreur data vide");
+                console.error("Empty data error");
             }
             else
             {
@@ -256,7 +256,7 @@ eventSource.onmessage = (event) => {
         }
         
     } catch (err) {
-        console.error('Erreur de parsing des données:', err);
+        console.error('Data parsing error:', err);
     }
 };
 

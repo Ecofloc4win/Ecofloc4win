@@ -166,19 +166,17 @@
         })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    console.log('Script exécuté avec succès :', data.stdout);
-                } else {
-                    console.error(`Erreur lors de l'exécution :`, data.message);
-                    alert(`Erreur : ${data.message}`);
+                if (!data.success) {
+                    console.error(`Data error :`, data.message);
+                    alert(`Error : ${data.message}`);
                 }
             })
             .catch(error => {
-                console.error('Erreur réseau ou serveur :', error);
-                alert('Impossible de contacter le serveur.');
+                console.error('Network or server error :', error);
+                alert('Unable to contact the server.');
             });
         }
-        
+
         function stopExecutable() {
             fetch('http://localhost:3030/stop', {
                 method: 'POST',

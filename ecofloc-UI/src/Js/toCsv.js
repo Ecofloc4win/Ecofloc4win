@@ -75,6 +75,6 @@ document.getElementById('exportCSV').addEventListener('click', async () => {
         document.body.removeChild(a);
     } catch (error) {
         console.error('Error exporting data:', error);
-        alert(`Erreur d'export : ${error.message}`);
+        alert(`Export error: ${error.message}`);
     }
 });

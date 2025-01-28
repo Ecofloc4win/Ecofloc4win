@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { areSetsEqual } from '../Js/areSetsEqual';
 
 describe('areSetsEqual', () => {
-    it('areSetsEqual deux sets égaux', () => {
+    it('two equal sets', () => {
         // GIVEN
         const set1 = new Set();
         const set2 = new Set();
@@ -18,7 +18,7 @@ describe('areSetsEqual', () => {
         expect(areSetsEqual(set2, set1)).toBe(true);
     });
 
-    it('areSetsEqual deux sets de même taille mais non égaux', () => {
+    it('two sets of the same size but not equal', () => {
         // GIVEN
         const set1 = new Set();
         const set2 = new Set();
@@ -34,7 +34,7 @@ describe('areSetsEqual', () => {
         expect(areSetsEqual(set2, set1)).toBe(false);
     });
 
-    it('areSetsEqual deux sets différents', () => {
+    it('two different sets', () => {
         // GIVEN
         const set1 = new Set();
         const set2 = new Set();

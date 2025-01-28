@@ -15,7 +15,7 @@ describe('DynamicGraph', () => {
         vi.clearAllMocks();
     });
 
-    it('ajout d\'une trace pour un nouveau PID', () => {
+    it('add a trace for a new PID', () => {
         // GIVEN
         const PID = '123';
         const initialTraces = Object.keys(graph.traceIndices).length;
@@ -30,7 +30,7 @@ describe('DynamicGraph', () => {
         expect(Plotly.addTraces).toHaveBeenCalledTimes(1);
     });
 
-    it('ajout de la trace pour le PID TOTAL', () => {
+    it('trace added for PID TOTAL', () => {
         // GIVEN
         const PID = 'TOTAL';
         const value = 50;
@@ -45,7 +45,7 @@ describe('DynamicGraph', () => {
         expect(Plotly.addTraces).toHaveBeenCalledTimes(1);
     });
 
-    it('mise à jour d\'une trace existante', () => {
+    it('updating an existing trace', () => {
         //GIVEN
         const PID = '456';
 
@@ -57,7 +57,7 @@ describe('DynamicGraph', () => {
         expect(graph.data[PID].y).toEqual([20, 30]);
     });
 
-    it('génération d\'une couleur aléatoire', () => {
+    it('random color generation', () => {
         // WHEN
         const color = graph.getRandomColor();
         

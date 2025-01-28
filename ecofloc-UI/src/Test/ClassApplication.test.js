@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import Application from '../Js/ClassApplication'; 
 
 describe('Application', () => {
-    it('Création d\'une Application', () => {
+    it('Creating an Application', () => {
         // WHEN
         let uneApplication = new Application("Test",[0,1,2], "Browser");
         

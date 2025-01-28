@@ -1,4 +1,3 @@
-import Application from './ClassApplication'; 
 import { areSetsEqual } from './areSetsEqual';
 import MapperApplication from './mapperApplication';
 

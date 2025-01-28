@@ -134,8 +134,7 @@ function changePidState(nomProc, pidProc, etat) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log('Script exécuté avec succès');
-                //alert('Script exécuté avec succès !');
+                //console.log('Script exécuté avec succès');
             } else {
                 console.error('Erreur lors de l\'exécution :', data.message);
                 alert(`Erreur : ${data.message}`);
@@ -183,11 +182,11 @@ function afficherListeProcessus() {
                 }
                 inputCheckbox.checked = unPid["checked"];
                 inputCheckbox.setAttribute("data-nom-processus", unProcessus.getName());
-                inputCheckbox.setAttribute("data-numero-pid", unPid["numeroPid"]);
+                inputCheckbox.setAttribute("data-numero-pids", unPid["numeroPid"]);
                 inputCheckbox.addEventListener('click', function(event) {
                     let clickedCheckbox = event.target;
                     const dataNomProcessus = event.target.getAttribute("data-nom-processus");
-                    const dataNumeroPid = event.target.getAttribute("data-numero-pid");
+                    const dataNumeroPid = event.target.getAttribute("data-numero-pids");
                     changePidState(dataNomProcessus, dataNumeroPid,clickedCheckbox.checked);
                 });
                 col2Div.appendChild(inputCheckbox); // Ajouter la case à cocher à col-2
@@ -206,72 +205,83 @@ function afficherListeProcessus() {
 }
 
 function selectAllPid(etat) {
-    const searchText = document.getElementById("SearchBar").value == "" ? "":document.getElementById("SearchBar").value.toLowerCase();
+    const searchText = document.getElementById("SearchBar").value.toLowerCase();
     let listePidAChanger = new Set();
-    for(let unProcessus of mesProcessus){
-        if (!unProcessus.getName().toLowerCase().includes(searchText)){
+
+    // Collect all visible processes based on search and filters
+    for(let unProcessus of mesProcessus) {
+        if (searchText && !unProcessus.getName().toLowerCase().includes(searchText)) {
             continue;
         }
-        if(!getFilterCategorie(unProcessus.categorie)){
+        if(!getFilterCategorie(unProcessus.categorie)) {
             continue;
         }
-        for(let unPid of unProcessus.getListePid()){
-            if(unPid.checked != etat){
-                listePidAChanger.add(unProcessus.getName());
+        listePidAChanger.add(unProcessus.getName());
+    }
+
+    // Update UI immediately for better responsiveness
+    for(let unProcessus of mesProcessus) {
+        if(listePidAChanger.has(unProcessus.getName())) {
+            for(let unPid of unProcessus.getListePid()) {
+                unPid.checked = etat;
             }
         }
     }
-    console.log(listePidAChanger);
-    const serverUrl = 'http://localhost:3030/changeListePidState';
-    // Envoi au serveur avec fetch
-    fetch(serverUrl, {
+    afficherListeProcessus();
+
+    // Send update to server
+    fetch('http://localhost:3030/updateProcessListState', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json', // Assurez-vous d'envoyer du JSON
+            'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ liste: Array.from(listePidAChanger), etat: etat }), // Sérialise la liste dans le corps de la requête
+        body: JSON.stringify({
+            list: Array.from(listePidAChanger),
+            state: etat
+        })
     })
-    .then(response => response.json()) // Récupère la réponse du serveur
+    .then(response => response.json())
     .then(data => {
-        console.log('Réponse du serveur :', data);
+        console.log('Server response:', data);
     })
     .catch(error => {
-        console.error('Erreur lors de l’envoi des données :', error);
+        console.error('Error updating process states:', error);
     });
-
 }
 
+// Update the checkbox event listener
 checkBoxSelectAllProcElement.addEventListener("change", (event) => {
-    selectAllPid(event.target.checked);
-    if (event.target.checked) {
-        console.log("La case à cocher est cochée.");
-    } else {
-        console.log("La case à cocher est décochée.");
-    }
+    const checked = event.target.checked;
+    selectAllPid(checked);
 });
 
 const eventSource = new EventSource('http://localhost:3030/events');
 
 eventSource.onmessage = (event) => {
-    try {
-        const data = JSON.parse(event.data);
-        if(!data){
-            console.error("Erreur data vide");
+    try {        
+        if (event.data[0] === "[")
+        {
+            const data = JSON.parse(event.data);
+            if(!data)
+            {
+                console.error("Erreur data vide");
+            }
+            else
+            {
+                parseDataToMyProcesses(data);
+            }
         }
-        if(!data["message"]){
-            parseDataToMyProcesses(data);
-        }
+        
     } catch (err) {
         console.error('Erreur de parsing des données:', err);
     }
 };
 
 eventSource.onerror = () => {
-    console.error('Erreur de connexion au serveur SSE');
+    //console.error('Erreur de connexion au serveur SSE');
 };
 
 document.getElementById("SearchBar").addEventListener("keyup", () => {
     const searchText = document.getElementById("SearchBar").value;
-    console.log(searchText);
     afficherListeProcessus();
 });

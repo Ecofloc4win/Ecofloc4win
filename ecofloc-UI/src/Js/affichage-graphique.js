@@ -34,6 +34,7 @@ const generateGraphHTML = (id, label) => {
 
 // Initialize all graphs
 const initializeGraphs = () => {
+    
     return Object.keys(componentDictionary).map(key => generateGraphHTML(key, componentDictionary[key])).join('');
 };
 
@@ -108,8 +109,8 @@ let graphNIC = new DynamicGraph("graphNIC", "rgb(96, 165, 250)");
 let graphSD = new DynamicGraph("graphSD", "rgb(129, 140, 248)");
 let graphTOTAL = new DynamicGraph("graphTOTAL", "rgb(192, 132, 252)");
 
-const startButton = document.querySelector("#start-button");
-const stopButton = document.querySelector("#stop-button");
+startButton = document.querySelector("#start-button");
+stopButton = document.querySelector("#stop-button");
 
 startButton.addEventListener("click", () => {
     setInterval(readFile, 500);

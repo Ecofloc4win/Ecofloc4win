@@ -1,239 +1,352 @@
 const express = require('express');
 const { exec } = require('child_process');
-const cors = require('cors'); // Pour permettre les requ�tes depuis votre front-end
+const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 
+// Server configuration
 const app = express();
-const port = 3030;
-const appProcessPath = './Json/process.json';
-const systemMonitoringPath = './Json/system_monitoring.json'
+const PORT = 3030;
+const PATHS = {
+    processJson: './Json/process.json',
+    systemMonitoring: './Json/system_monitoring.json',
+    generator: path.join(__dirname, 'Generator.exe'),
+    configurator: path.join(__dirname, '..', '..', 'EcoflocConfigurator.exe'),
+    pidRecup: path.join(__dirname, 'PIDRecup.exe')
+};
 
-let processRunning = false; // Indique si le processus est en cours d'ex�cution
-let configuratorRunning = false; // Indique si le configurator est en cours d'ex�cution
+// Process state management
+let currentProcess = null;
+let processRunning = false;
+let configuratorRunning = false;
 
-// Middleware
+// File system utilities
+const fileUtils = {
+    readJSON: (filePath) => {
+        try {
+            return fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf8')) : null;
+        } catch (error) {
+            console.error(`Error reading JSON file ${filePath}:`, error);
+            return null;
+        }
+    },
+
+    writeJSON: (filePath, data) => {
+        try {
+            fs.writeFileSync(filePath, JSON.stringify(data, null, 4), 'utf8');
+            return true;
+        } catch (error) {
+            console.error(`Error writing JSON file ${filePath}:`, error);
+            return false;
+        }
+    },
+
+    resetMonitoringFile: () => {
+        // Only reset if the file doesn't exist or is empty
+        if (!fs.existsSync(PATHS.systemMonitoring) || 
+            fs.statSync(PATHS.systemMonitoring).size === 0) {
+            fileUtils.writeJSON(PATHS.systemMonitoring, { apps: [] });
+        }
+    },
+
+    exportToCSV: (graphData) => {
+        console.log('Received graph data:', Object.keys(graphData));
+        
+        const header = ['Timestamp', 'Component', 'PID', 'Value'];
+        const rows = [];
+        
+        // Add header
+        rows.push(header.join(','));
+        
+        try {
+            // Get all timestamps from the data
+            const allTimestamps = new Set();
+            
+            // Collect all timestamps first
+            Object.entries(graphData).forEach(([component, data]) => {
+                console.log(`Processing component ${component}, data:`, Object.keys(data));
+                Object.entries(data).forEach(([pid, trace]) => {
+                    if (trace && Array.isArray(trace.x)) {
+                        trace.x.forEach(timestamp => allTimestamps.add(timestamp));
+                    }
+                });
+            });
+
+            // Sort timestamps
+            const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b);
+            console.log(`Found ${sortedTimestamps.length} unique timestamps`);
+            
+            // Add data rows
+            sortedTimestamps.forEach(timestamp => {
+                Object.entries(graphData).forEach(([component, data]) => {
+                    Object.entries(data).forEach(([pid, trace]) => {
+                        if (trace && Array.isArray(trace.x) && Array.isArray(trace.y)) {
+                            const index = trace.x.indexOf(timestamp);
+                            if (index !== -1 && !isNaN(trace.y[index])) {
+                                const row = [
+                                    new Date(timestamp * 1000).toLocaleString(),
+                                    component,
+                                    pid,
+                                    trace.y[index].toFixed(2)
+                                ];
+                                rows.push(row.join(','));
+                            }
+                        }
+                    });
+                });
+            });
+
+            console.log(`Generated ${rows.length} rows of data`);
+        } catch (error) {
+            console.error('Error processing data:', error);
+            throw new Error(`Failed to process data: ${error.message}`);
+        }
+        
+        return rows.join('\n');
+    }
+};
+
+// Process management utilities
+const processUtils = {
+    cleanup: () => {
+        if (currentProcess) {
+            try {
+                process.kill(currentProcess.pid, 0);
+                process.kill(currentProcess.pid);
+            } catch (error) {
+                if (error.code !== 'ESRCH') {
+                    console.error('Error during process cleanup:', error);
+                }
+            } finally {
+                currentProcess = null;
+                processRunning = false;
+            }
+        }
+        processRunning = false;
+    },
+
+    killProcess: (pid, callback) => {
+        exec(`taskkill /PID ${pid} /T /F`, callback);
+    }
+};
+
+// Initialize server
 app.use(cors());
 app.use(express.json());
 
-// Changer le dir par le correcte
-const absolutePath = path.resolve('./ecofloc-UI/src');
-if (fs.existsSync(absolutePath)) {
-  process.chdir(absolutePath); // Change le répertoire de travail
-  console.log(`Répertoire de travail changé à : ${absolutePath}`);
+// Set working directory
+const srcPath = path.resolve('./ecofloc-UI/src');
+if (fs.existsSync(srcPath)) {
+    process.chdir(srcPath);
 } else {
-  console.error(`Le répertoire ${absolutePath} n'existe pas.`);
+    console.error(`Directory ${srcPath} does not exist`);
+    process.exit(1);
 }
 
-// API pour lancer l'ex�cutable
-app.post('/execute', (req, res) => {
-    const exePath = `"${__dirname}\\Generator.exe"`; // Chemin absolu vers l'ex�cutable
+// Clean shutdown handlers
+process.on('SIGINT', processUtils.cleanup);
+process.on('SIGTERM', processUtils.cleanup);
 
+// API endpoints
+app.post('/execute', (req, res) => {
     if (processRunning) {
         return res.status(400).json({ success: false, message: 'Process already running' });
     }
 
     try {
-        // Lancer l'ex�cutable
-        const command = `${exePath} ${systemMonitoringPath}`;
-        const process = exec(command, (error, stdout, stderr) => {
-            processRunning = false; // R�initialiser apr�s ex�cution
-            if (error) {
-                console.error(`Erreur d'ex�cution : ${error.message}`);
-                return; // Pas de `res.json` ici car la r�ponse a d�j� �t� envoy�e
-            }
+        processUtils.cleanup();
+        fileUtils.resetMonitoringFile();
 
-            if (stderr) {
-                console.warn(`Stderr : ${stderr}`);
-                return; // Idem, g�rer sans r�ponse suppl�mentaire
-            }
-
-            console.log(`Stdout : ${stdout}`);
+        currentProcess = exec(`"${PATHS.generator}" ${PATHS.systemMonitoring}`);
+        
+        currentProcess.on('error', (error) => {
+            console.error(`Process error: ${error.message}`);
+            processUtils.cleanup();
+            res.status(500).json({ success: false, message: 'Process error occurred' });
         });
 
-        processRunning = true; // Indique que le processus a d�marr�
-        console.log('Process launched');
+        currentProcess.on('exit', (code, signal) => {
+            console.log(`Process exited with code ${code} and signal ${signal}`);
+            processUtils.cleanup();
+        });
+
+        processRunning = true;
+        res.json({ success: true});
     } catch (error) {
-        console.error(`Erreur inattendue : ${error.message}`);
-        processRunning = false; // Assurer que l'�tat est r�initialis�
-        return res.status(500).json({ success: false, message: 'Erreur lors du lancement du processus.' });
+        console.error(`Unexpected error: ${error.message}`);
+        processUtils.cleanup();
+        res.status(500).json({ success: false, message: 'Error launching process' });
     }
 });
 
-// API pour lancer le configurator
-app.post('/configurator', (req, res) => {
-    const exePath = `"${__dirname}\\..\\..\\EcoflocConfigurator.exe"`; // Chemin absolu vers le configurator
+app.post('/stop', (req, res) => {
+    if (!processRunning || !currentProcess) {
+        return res.status(400).json({ success: false, message: 'No process running' });
+    }
 
+    try {
+        processUtils.killProcess(currentProcess.pid, (error) => {
+            if (error) {
+                console.error('Error killing process:', error);
+                res.status(500).json({ success: false, message: 'Error stopping process' });
+            } else {
+                processUtils.cleanup();
+                res.json({ success: true });
+            }
+        });
+    } catch (error) {
+        console.error(`Error stopping process: ${error.message}`);
+        processUtils.cleanup();
+        res.status(500).json({ success: false, message: 'Error stopping process' });
+    }
+});
+
+app.post('/configurator', (req, res) => {
     if (configuratorRunning) {
         return res.status(400).json({ success: false, message: 'Configurator already running' });
     }
 
     try {
-        const process = exec(exePath, (error, stdout, stderr) => {
-            configuratorRunning = false; // R�initialiser apr�s ex�cution
+        exec(`"${PATHS.configurator}"`, (error) => {
+            configuratorRunning = false;
             if (error) {
-                console.error(`Erreur d'ex�cution : ${error.message}`);
-                return;
+                console.error(`Execution error: ${error.message}`);
+                return res.status(500).json({ success: false, message: 'Error launching configurator' });
             }
-            if (stderr) {
-                console.warn(`Stderr : ${stderr}`);
-                return;
-            }
-            console.log(`Stdout : ${stdout}`);
+            res.json({ success: true, message: 'Configurator launched successfully' });
         });
 
         configuratorRunning = true;
-        console.log('Configurator started');
     } catch (error) {
-        console.error(`Erreur inattendue : ${error.message}`);
+        console.error(`Unexpected error: ${error.message}`);
         configuratorRunning = false;
-        return res.status(500).json({ success: false, message: 'Erreur lors du lancement du configurator.' });
+        res.status(500).json({ success: false, message: 'Error launching configurator' });
     }
 });
 
-
-// API pour arr�ter l'ex�cutable
-app.post('/stop', (req, res) => {
-    const exeName = 'Generator.exe'; // Nom du processus � tuer
-
-    if (!processRunning) {
-        return res.status(400).json({ success: false, message: 'No process running' });
-    }
-
-    try {
-        // Utilisation de taskkill pour arr�ter le processus par nom
-        exec(`taskkill /IM ${exeName} /F`, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`Erreur lors de l'arr�t : ${error.message}`);
-                return res.status(500).json({ success: false, message: `Error : ${error.message}` });
-            }
-
-            if (stderr) {
-                console.warn(`Stderr : ${stderr}`);
-                // Optionnel : envoyer un avertissement
-            }
-
-            console.log(`Process stopped : ${stdout}`);
-            processRunning = false;
-        });
-    } catch (error) {
-        console.error(`Erreur inattendue : ${error.message}`);
-        processRunning = false;
-        return res.status(500).json({ success: false, message: 'Error while attempting to stop the process.' });
-    }
-});
-
-app.post('/changeListePidState', (req, res) => {
-    const { liste, etat } = req.body; // Récupère les données envoyées
-    console.log('taille liste reçue :', liste.length);
-    console.log('etat :', etat);
-    const data = JSON.parse(fs.readFileSync(appProcessPath, 'utf-8'));
-    // Réponse au client
-    data.forEach(process => {
-        if (liste.includes(process.name)) {
-            process.pids.forEach(pidInfo => {
-                pidInfo.checked = etat;
-            });
-        }
-    });
-    // Sauvegarder les modifications dans le fichier JSON
-    fs.writeFileSync(appProcessPath, JSON.stringify(data, null, 4), 'utf-8');
+app.post('/updateProcessListState', (req, res) => {
+    const { list, state } = req.body;
+    const data = fileUtils.readJSON(PATHS.processJson);
     
-    console.log('Valeur modifiée avec succès.');
-    res.json({ message: 'Liste reçue avec succès', receivedListe: liste });
+    if (data) {
+        data.forEach(process => {
+            if (list.includes(process.name)) {
+                process.pids.forEach(pidInfo => pidInfo.checked = state);
+            }
+        });
+        fileUtils.writeJSON(PATHS.processJson, data);
+    }
+    
+    res.json({ success: true, message: 'Process list updated', list });
 });
 
 app.post('/changePidState', (req, res) => {
-    console.log('Répertoire courant :', process.cwd());
-    const { nomProc, pidProc, etat } = req.body; // Extract nomProc and pidProc from the request body
-    console.log('Received changePidState request');
-    console.log('nomProc:', nomProc);
-    console.log('pidProc:', pidProc);
-    console.log('Etat:', etat)
-
-    // Récupérer
-    const data = JSON.parse(fs.readFileSync(appProcessPath, 'utf-8'));
-
-    // Parcourir les processus pour modifier la valeur
-    data.forEach(process => {
-        if (process.name == nomProc) {
-            process.pids.forEach(pidInfo => {
-                if (pidInfo.numeroPid == pidProc) {
-                    pidInfo.checked = etat;
-                }
-            });
-        }
-    });
-    // Sauvegarder les modifications dans le fichier JSON
-    fs.writeFileSync(appProcessPath, JSON.stringify(data, null, 4), 'utf-8');
+    const { processName, pid, state } = req.body;
+    const data = fileUtils.readJSON(PATHS.processJson);
     
-    console.log('Valeur modifiée avec succès.');
-
-    // Example response:
-    res.json({
-        success: true,
-        message: 'Process state changed successfully!',
-        nomProc,
-        pidProc,
-        etat
-    });
+    if (data) {
+        data.forEach(process => {
+            if (process.name === processName) {
+                process.pids.forEach(pidInfo => {
+                    if (pidInfo.numeroPid === pid) {
+                        pidInfo.checked = state;
+                    }
+                });
+            }
+        });
+        fileUtils.writeJSON(PATHS.processJson, data);
+    }
+    
+    res.json({ success: true, message: 'PID state updated' });
 });
 
-// Route SSE
+app.post('/changeListePidState', (req, res) => {
+    const { list, state } = req.body;
+    console.log('Length receive :', list.length);
+    console.log('state :', state);
+    const data = fileUtils.readJSON(PATHS.processJson);
+    if (data) {
+        data.forEach(process => {
+            if (list.includes(process.name)) {
+                process.pids.forEach(pidInfo => {
+                    pidInfo.checked = state;
+                });
+            }
+        });
+        fileUtils.writeJSON(PATHS.processJson, data);
+    }
+    
+    console.log('Valeur modifiée avec succès.');
+    res.json({ message: 'Liste reçue avec succès', receivedList: list });
+});
+
 app.get('/events', (req, res) => {
-    // Configuration des headers pour SSE
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    console.log('Client SSE connecté');
+    console.log('Client SSE connected');
 
-    // Envoi d'un message initial
-    res.write(`data: ${JSON.stringify({ message: 'Connexion établie' })}\n\n`);
+    res.write(`data: ${JSON.stringify({ message: 'Connexion established' })}\n\n`);
 
     const filePath = './Json/process.json';
 
-    // Surveiller le fichier JSON
     const watcher = fs.watch(filePath, (eventType) => {
         if (eventType === 'change') {
-            console.log(`Fichier modifié: ${filePath}`);
+            console.log(`File modified: ${filePath}`);
 
-            // Lire le contenu du fichier
             fs.readFile(filePath, 'utf8', (err, data) => {
                 if (err) {
-                    console.error('Erreur de lecture du fichier:', err);
+                    console.error('Error while reading the file :', err);
                     return;
                 }
-
-                // Vérifier si le contenu est un JSON valide
-                try {
-                    const jsonData = JSON.parse(data); // Valider le JSON
-                    res.write(`data: ${JSON.stringify(jsonData)}\n\n`); // Envoyer au client
+                try {                    
+                    const jsonData = JSON.parse(data);
+                    res.write(`data: ${JSON.stringify(jsonData)}\n\n`);
                 } catch (parseErr) {
-                    console.error('Erreur de parsing JSON:', parseErr);
-                    res.write(`data: ${JSON.stringify({ error: 'Invalid JSON format' })}\n\n`);
+                    // console.error('Error of parsing JSON:', parseErr);
+                    // res.write(`data: ${JSON.stringify({ error: 'Invalid JSON format' })}\n\n`);
                 }
             });
         }
     });
 
-    // Nettoyer le watcher lorsque le client se déconnecte
     req.on('close', () => {
-        console.log('Client SSE déconnecté');
+        console.log('Client SSE deconnected');
         watcher.close();
     });
 });
 
-// API pour lancer le configurator
-app.post('/update', (req, res) => {
-    const exePath = `"${__dirname}\\PIDRecup.exe"`; // Chemin absolu vers le configurator
+app.post('/export-csv', (req, res) => {
+    try {
+        const graphData = req.body;
+        
+        if (!graphData || typeof graphData !== 'object') {
+            throw new Error('Invalid data format received');
+        }
+        
+        const csvContent = fileUtils.exportToCSV(graphData);
+        
+        if (!csvContent) {
+            throw new Error('No data to export');
+        }
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=monitoring_data.csv');
+        res.send(csvContent);
+    } catch (error) {
+        console.error('Error exporting CSV:', error);
+        res.status(500).send(error.message);
+    }
+});
 
-     try {
-        const command = `${exePath} ${appProcessPath}`;
+app.post('/update', (req, res) => {
+    try {
+        const command = `"${PATHS.pidRecup}" ${PATHS.processJson}`;
         const process = exec(command, (error, stdout, stderr) => {
-            configuratorRunning = false; // R�initialiser apr�s ex�cution
+            configuratorRunning = false;
             if (error) {
-                console.error(`Erreur d'ex�cution : ${error.message}`);
+                console.error(`Error of execution : ${error.message}`);
                 return;
             }
             if (stderr) {
@@ -245,14 +358,14 @@ app.post('/update', (req, res) => {
 
         
     } catch (error) {
-        console.error(`Erreur inattendue : ${error.message}`);
+        console.error(`Unexpected error : ${error.message}`);
         configuratorRunning = false;
-        return res.status(500).json({ success: false, message: 'Erreur lors du lancement du configurator.' });
+        return res.status(500).json({ success: false, message: 'Error during the update' });
     }
 });
 
-
-// D�marrer le serveur
-app.listen(port, () => {
-    console.log(`Serveur en cours d'ex�cution sur http://localhost:${port}`);
+// Start server
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    fileUtils.resetMonitoringFile();
 });

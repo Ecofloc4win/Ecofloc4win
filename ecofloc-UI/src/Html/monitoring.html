@@ -32,77 +32,85 @@
     </header>
 
     <!-- Main Content -->
-    <main class=" flex-1 flex flex-col w-full bg-zinc-900 text-white">
+    <main class="flex-1 flex flex-col w-full bg-zinc-900 text-white">
+        <!-- Export Button -->
+        <div class="absolute left-4 top-24 z-10">
+            <button id="exportCSV" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded flex items-center gap-2 transition-colors duration-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Export CSV
+            </button>
+        </div>
             
-        
-            <!-- Graphs -->
-            <div id="flex-graphique" class="list-graph h-3/4 flex-1">
+        <!-- Graphs -->
+        <div id="flex-graphique" class="list-graph h-3/4 flex-1">
                 
-            </div>
+        </div>
 
-            <!-- Options & Table -->
-            <section class="w-full flex h-1/4 gap-[.5em] my-[.5em] ">
-                <aside id="options">
-                    <!-- Ipt-TimeStamp -->
-                    <div id="input_ts" class="mt-4 sidebar-transition">
-                        <label class="block mb-2">Intervalle (ms)</label>
-                        <input type="number" min="500" value="1000" max="30000" step="250" class="w-full bg-zinc-700 text-white p-2 rounded-md">
+        <!-- Options & Table -->
+        <section class="w-full flex h-1/4 gap-[.5em] my-[.5em] ">
+            <aside id="options">
+                <!-- Ipt-TimeStamp -->
+                <div id="input_ts" class="mt-4 sidebar-transition">
+                    <label class="block mb-2">Intervalle (ms)</label>
+                    <input type="number" min="500" value="1000" max="30000" step="250" class="w-full bg-zinc-700 text-white p-2 rounded-md">
+                </div>
+                <!-- Play/Stop buttons -->
+                <div id="list-buttons" class="sidebar-transition">
+                    <button id="start-button" onclick="executeScript(); return false;">
+                        <img src="../assets/play.svg" alt="play" class="size-[50px]">
+                    </button>
+                    <button id="stop-button" class="p-2" onclick="stopExecutable()">
+                        <img src="../assets/stop.svg" alt="stop" class="size-[50px]">
+                    </button>
+                </div>
+            </aside>
+            <div id="list-tab" class="w-full h-full flex flex-row justify-between bg-zinc-800 rounded-md p-2 px-2 gap-5">
+                <div id="process-tab" class="custom-table w-3/4">
+                <div class="custom-thead">
+                    <div class="col-1">
+                        Process name
+                        <input type="text" id="SearchBar" placeholder="Search..">
                     </div>
-                    <!-- Play/Stop buttons -->
-                    <div id="list-buttons" class="sidebar-transition">
-                        <button id="start-button" onclick="executeScript(); return false;" class="p-2">
-                            <img src="../assets/play.svg" alt="play" class="size-[50px]">
+                    <div class="col-2">PID</div>
+                    <div>
+                        <button onclick="updateListPID()" placeholder="text" class="rotateOnClick">
+                            <img src="https://cdn-icons-png.flaticon.com/128/2805/2805355.png" alt="Refresh" title="Refresh" width="20" height="20" style="filter: brightness(0) invert(1);">
                         </button>
-                        <button id="stop-button" class="p-2" onclick="stopExecutable()">
-                            <img src="../assets/stop.svg" alt="stop" class="size-[50px]">
-                        </button>
                     </div>
-                </aside>
-                <div id="list-tab" class="w-full h-full flex flex-row justify-between bg-zinc-800 rounded-md p-2 px-2 gap-5">
-                    <div id="process-tab" class="custom-table w-3/4">
-                    <div class="custom-thead">
-                        <div class="col-1">
-                            Process name
-                            <input type="text" id="SearchBar" placeholder="Search..">
-                        </div>
-                        <div class="col-2">PID</div>
-                        <div>
-                            <button onclick="updateListPID()" placeholder="text" class="rotateOnClick">
-                                <img src="https://cdn-icons-png.flaticon.com/128/2805/2805355.png" alt="Refresh" title="Refresh" width="20" height="20" style="filter: brightness(0) invert(1);">
-                            </button>
-                        </div>
-                        <div>
-                            <input class="green-checkbox" type="checkbox" id="SelectAllProc">
-                        </div>
+                    <div>
+                        <input class="green-checkbox" type="checkbox" id="SelectAllProc">
                     </div>
-                    <div class="custom-tbody" id="ListeProcessus">
+                </div>
+                <div class="custom-tbody" id="ListeProcessus">
+                </div>
+                </div>
+                <div id="group-tab" class="custom-table w-1/4">
+                <div class="custom-thead col-3">
+                    <div>Group Application</div>
+                </div>
+                <div class="custom-tbody" id="TableFilter">
+                    <div class="line col-3">
+                        <div>All</div>
+                        <input type="checkbox" id="AllFilter" value="All">
                     </div>
+                    <div class="line col-3">
+                        <div>OfficeApplication</div>
+                        <input type="checkbox" id="OfficeApplicationFilter" value="Office">
                     </div>
-                    <div id="group-tab" class="custom-table w-1/4">
-                    <div class="custom-thead col-3">
-                        <div>Group Application</div>
+                    <div class="line col-3">
+                        <div>Browser</div>
+                        <input type="checkbox" id="NavigateurFilter" value="Browser">
                     </div>
-                    <div class="custom-tbody" id="TableFilter">
-                        <div class="line col-3">
-                            <div>All</div>
-                            <input type="checkbox" id="AllFilter" value="All">
-                        </div>
-                        <div class="line col-3">
-                            <div>OfficeApplication</div>
-                            <input type="checkbox" id="OfficeApplicationFilter" value="Office">
-                        </div>
-                        <div class="line col-3">
-                            <div>Browser</div>
-                            <input type="checkbox" id="NavigateurFilter" value="Browser">
-                        </div>
-                        <div class="line col-3">
-                            <div>Other</div>
-                            <input type="checkbox" id="OtherFilter" value="Other">
-                        </div>
+                    <div class="line col-3">
+                        <div>Other</div>
+                        <input type="checkbox" id="OtherFilter" value="Other">
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
     </main>
     <!-- Script -->
     <script>
@@ -157,11 +165,9 @@
                 .then(response => response.json())
                 .then(data => {
                     console.log(data.message);
-                    alert(data.message);  // Affiche un message à l'utilisateur
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Failed to stop executable');
                 });
         }
 
@@ -175,23 +181,130 @@
                 .then(response => response.json())
                 .then(data => {
                     console.log(data.message);
-                    alert(data.message);  // Affiche un message à l'utilisateur
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Failed to stop executable');
                 });
         }
         updateListPID();
 
+        function executeScript() {
+            fetch('http://localhost:3030/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data.message);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
 
+        function stopExecutable() {
+            fetch('http://localhost:3030/stop', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data.message);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
     </script>
     <script src="../Js/ClassApplication.js"></script>
     <script src="../Js/process-filter.js"></script>
     <script src="../Js/ClassDynamicGraph.js"></script>
     <script src="../Js/affichage-graphique.js"></script>
-    
-    
+    <script>
+        // Export CSV functionality
+        document.getElementById('exportCSV').addEventListener('click', async () => {
+            try {
+                if (!graphCPU || !graphGPU || !graphNIC || !graphSD) {
+                    throw new Error('graphs does not exists');
+                }
+
+                actualDateInSecond = new Date().getTime() / 1000;
+                monitoringDuration = Math.max(
+                                        ...Object.values(graphCPU.data)
+                                        .flatMap(obj => obj.x)
+                                    );
+                monitoringStartTime = actualDateInSecond - monitoringDuration;
+
+                // Collect data from all graphs with x and y values
+                const graphData = {
+                CPU: Object.fromEntries(
+                    Object.entries(graphCPU.data).map(([pid, data]) => [pid,
+                    {
+                        // Ajuste chaque élément de la liste x pour inclure la date de début
+                        x: data.x.map(timestamp => timestamp + monitoringStartTime) || [],
+                        y: data.y || [],
+                    },])),
+                GPU: Object.fromEntries(
+                    Object.entries(graphGPU.data).map(([pid, data]) => [pid,
+                    {
+                        x: data.x.map(timestamp => timestamp + monitoringStartTime) || [],
+                        y: data.y || [],
+                    },])),
+                NIC: Object.fromEntries(
+                    Object.entries(graphNIC.data).map(([pid, data]) => [pid,
+                    {
+                        x: data.x.map(timestamp => timestamp + monitoringStartTime) || [],
+                        y: data.y || [],
+                    },])),
+                SD: Object.fromEntries(
+                    Object.entries(graphSD.data).map(([pid, data]) => [pid,
+                    {
+                        x: data.x.map(timestamp => timestamp + monitoringStartTime) || [],
+                        y: data.y || [],
+                    },]))
+                };
+
+                console.log(graphData);
+                const response = await fetch('http://localhost:3030/export-csv', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(graphData)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Server error:', errorText);
+                    throw new Error(`Export failed: ${errorText}`);
+                }
+                const blob = await response.blob();
+                console.log('Received blob:', blob);
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+
+                const now = new Date();
+                const date = now.toISOString().split('T')[0];
+                const time = `${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}`;
+                
+                a.download = `monitoring_data_${date}_${time}.csv`;
+                
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                console.error('Error exporting data:', error);
+                alert(`Erreur d'export : ${error.message}`);
+            }
+        });
+    </script>
 </body>
 
 </html>

@@ -33,6 +33,7 @@ class DynamicGraph {
         if (!this.data[PID]) {
             if (PID !== "TOTAL") {
                 this.data[PID] = {
+                    x: [],
                     y: [],
                     line: { color:color },
                     fill: 'none',
@@ -41,19 +42,20 @@ class DynamicGraph {
             }
             else{
                 this.data["TOTAL"] = {
+                    x: [],
                     y: [],
                     line: { color: "#10b981" },
                     fill: 'tozeroy',
                 };
             }
             
-
             // Ajoute une nouvelle trace pour ce PID
             Plotly.addTraces(this.nomGraphique, this.data[PID]);
             this.traceIndices[PID] = Object.keys(this.traceIndices).length; // Associe un index à ce PID
         }
 
-        // Ajoute la valeur à la série correspondante
+        // Ajoute la valeur et le timestamp à la série correspondante
+        this.data[PID].x.push(time);
         this.data[PID].y.push(value);
 
         // Vérifie si un index existe pour ce PID
@@ -63,10 +65,22 @@ class DynamicGraph {
             return;
         }
 
-        // Met à jour la trace correspondante
-        console.log(`Mise à jour de la trace pour PID ${PID} à l'index ${index}`);
-        Plotly.update(this.nomGraphique, { y: [this.data[PID].y] }, {xaxis: {gridcolor: 'rgba(255,255,255,0.2)', tickfont: { color: 'white' }, range: [time-30, time]}}, [index]);
-        this.key++;
+        // Met à jour la trace correspondante avec les deux tableaux x et y
+        Plotly.update(
+            this.nomGraphique, 
+            { 
+                x: [this.data[PID].x],
+                y: [this.data[PID].y] 
+            }, 
+            {
+                xaxis: {
+                    gridcolor: 'rgba(255,255,255,0.2)', 
+                    tickfont: { color: 'white' }, 
+                    range: [time-30, time]
+                }
+            }, 
+            [index]
+        );
     }
 
     refreshGraph() {

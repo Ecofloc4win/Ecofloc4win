@@ -83,11 +83,6 @@ class DynamicGraph {
         );
     }
 
-    refreshGraph() {
-        const traces = Object.values(this.data);
-        Plotly.newPlot(this.nomGraphique, traces, this.layout, { responsive: true, displayModeBar: false });
-    }
-
     getRandomColor() {
         const r = Math.floor(Math.random() * 200)+55;
         const g = Math.floor(Math.random() * 200)+55;

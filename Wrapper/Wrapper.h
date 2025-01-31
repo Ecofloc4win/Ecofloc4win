@@ -6,6 +6,7 @@
 
 using namespace System;
 using namespace System::Collections::Generic;
+using namespace System::Text::RegularExpressions;
 using namespace LibreHardwareMonitor::Hardware;
 
 public ref class ManagedBridge
@@ -40,49 +41,81 @@ private:
     Computer^ computer;
     float^ cpuPower = gcnew float();
     List<ISensor^>^ powerSensors = gcnew List<ISensor^>();
+	List<ISensor^>^ clockSensors = gcnew List<ISensor^>();  
+	List<ISensor^>^ voltageSensors = gcnew List<ISensor^>();
     DateTime lastUpdate;
     TimeSpan updateInterval = TimeSpan::FromSeconds(2); // 2-second refresh interval
 
-    void InitializeSensors() {
-        try {
-            for (int i = 0; i < computer->Hardware->Count; i++) {
-                IHardware^ hardware = computer->Hardware[i];
-                if (hardware->HardwareType == HardwareType::Cpu) {
-                    hardware->Update(); // Initialize sensor list
+    String^ ExtractValueBetweenSlashes(String^ input)
+    {
+        String^ pattern = "/([^/]+)/";
+        Regex^ regex = gcnew Regex(pattern);
+        Match^ match = regex->Match(input);
 
-                    for (int j = 0; j < hardware->Sensors->Length; j++) {
+        if (match->Success)
+        {
+            return match->Groups[1]->Value;
+        }
+        return nullptr;
+    }
+
+    void InitializeSensors() {
+        for (int i = 0; i < computer->Hardware->Count; i++)
+        {
+            IHardware^ hardware = computer->Hardware[i];
+            if (hardware->HardwareType == HardwareType::Cpu)
+            {
+                String^ identifier = ExtractValueBetweenSlashes(hardware->Identifier->ToString());
+                hardware->Update();
+                if (identifier->Contains("intel", StringComparison::OrdinalIgnoreCase))
+                {
+                    for (int j = 0; j < hardware->Sensors->Length; j++)
+                    {
                         ISensor^ sensor = hardware->Sensors[j];
-                        if (sensor->Name->Contains("CPU Cores")) {
-                            if (sensor->SensorType == SensorType::Power) {
+                        if (sensor->Name->Contains("CPU Cores"))
+                        {
+                            if (sensor->SensorType == SensorType::Power)
+                            {
                                 powerSensors->Add(sensor);
                             }
                         }
                     }
                 }
+                else {
+                    for (int j = 0; j < hardware->Sensors->Length; j++)
+                    {
+                        ISensor^ sensor = hardware->Sensors[j];
+                        if (sensor->Name->Contains("Core #")) {
+                            if (sensor->SensorType == SensorType::Voltage)
+                            {
+                                powerSensors->Add(sensor);
+                            }
+                            else if (sensor->SensorType == SensorType::Clock)
+                            {
+                                clockSensors->Add(sensor);
+                            }
+                        }
+                    }
+                    Console::WriteLine(clockSensors->Count);
+                    Console::WriteLine(powerSensors->Count);
+                }
+
             }
-        }
-        catch (Exception^ ex) {
-            Console::WriteLine("Error initializing sensors: " + ex->Message);
         }
     }
 
     void RefreshHardware() {
-        try {
-            DateTime now = DateTime::Now;
-            if ((now - lastUpdate) >= updateInterval) {
-                lastUpdate = now;
+        DateTime now = DateTime::Now;
+        if ((now - lastUpdate) >= updateInterval) {
+            lastUpdate = now;
 
-                cpuPower = 0.0f;
+            cpuPower = 0.0f;
 
-                for each (ISensor ^ sensor in powerSensors) {
-                    if (sensor->Value.HasValue) {
-                        cpuPower = sensor->Value.Value;
-                    }
+            for each (ISensor ^ sensor in powerSensors) {
+                if (sensor->Value.HasValue) {
+                    cpuPower = sensor->Value.Value;
                 }
             }
-        }
-        catch (Exception^ ex) {
-            Console::WriteLine("Error in RefreshHardware: " + ex->Message);
         }
     }
 };

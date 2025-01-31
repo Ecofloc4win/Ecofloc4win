@@ -949,7 +949,7 @@ video {
   gap: 1rem;
 }
 
-.graphique{
+.graph{
   width: 32%;
   display: flex;
   flex-direction: column;
@@ -961,7 +961,7 @@ video {
   gap: .5rem;
 }
 
-.detail .graphique {
+.detail .graph {
   width: 20%;
   height: 15%;
 }

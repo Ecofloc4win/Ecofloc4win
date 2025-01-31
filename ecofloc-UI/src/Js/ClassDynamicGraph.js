@@ -1,6 +1,6 @@
 class DynamicGraph 
 {
-    constructor(nameGraph) 
+    constructor(graphName) 
     {
         this.layout = 
         {
@@ -24,10 +24,10 @@ class DynamicGraph
 
         this.data = {}; // PID series storage
         this.traceIndices = {}; // Link between PID and trace index
-        this.nameGraph = nameGraph;
+        this.graphName = graphName;
 
         // Graph initialization
-        Plotly.newPlot(this.nameGraph, [], this.layout, { responsive: true, displayModeBar: false });
+        Plotly.newPlot(this.graphName, [], this.layout, { responsive: true, displayModeBar: false });
     }
 
     updatePlot(PID, value, time, color) 
@@ -58,7 +58,7 @@ class DynamicGraph
             }
             
             // Adds a new trace for this PID
-            Plotly.addTraces(this.nameGraph, this.data[PID]);
+            Plotly.addTraces(this.graphName, this.data[PID]);
             this.traceIndices[PID] = Object.keys(this.traceIndices).length; // Associate an index with this PID
         }
 
@@ -76,7 +76,7 @@ class DynamicGraph
 
         // Updates the corresponding trace with the two tables x and y
         Plotly.update(
-            this.nameGraph, 
+            this.graphName, 
             { 
                 x: [this.data[PID].x],
                 y: [this.data[PID].y] 

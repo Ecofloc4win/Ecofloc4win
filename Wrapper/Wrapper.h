@@ -3,8 +3,10 @@
 #include <msclr/marshal_cppstd.h>
 #include <iostream>
 #include <ctime>
+#include <fstream>
 
 using namespace System;
+using namespace System::IO;
 using namespace System::Collections::Generic;
 using namespace LibreHardwareMonitor::Hardware;
 
@@ -12,17 +14,22 @@ public ref class ManagedBridge
 {
 public:
     ManagedBridge() {
-        try {
-            computer = gcnew Computer();
-            computer->IsCpuEnabled = true;
-            computer->Open();
-            lastUpdate = DateTime::Now - updateInterval;
+        computer = gcnew Computer();
+        computer->IsCpuEnabled = true;
+        computer->Open();
 
-            InitializeSensors();
-        }
-        catch (Exception^ ex) {
-            Console::WriteLine("Error in ManagedBridge constructor: " + ex->Message);
-        }
+		String^ filename = "log.txt";
+
+		StreamWriter^ sw = gcnew StreamWriter(filename);
+		sw->WriteLine("Log file created at {0}", DateTime::Now);
+		sw->WriteLine(computer->GetReport());
+		sw->Close();
+
+        computer->
+
+        lastUpdate = DateTime::Now - updateInterval;
+
+        InitializeSensors();
     }
 
     float^ getCPUCoresPower() {
@@ -44,45 +51,35 @@ private:
     TimeSpan updateInterval = TimeSpan::FromSeconds(2); // 2-second refresh interval
 
     void InitializeSensors() {
-        try {
-            for (int i = 0; i < computer->Hardware->Count; i++) {
-                IHardware^ hardware = computer->Hardware[i];
-                if (hardware->HardwareType == HardwareType::Cpu) {
-                    hardware->Update(); // Initialize sensor list
+        for (int i = 0; i < computer->Hardware->Count; i++) {
+            IHardware^ hardware = computer->Hardware[i];
+            if (hardware->HardwareType == HardwareType::Cpu) {
+                hardware->Update(); // Initialize sensor list
 
-                    for (int j = 0; j < hardware->Sensors->Length; j++) {
-                        ISensor^ sensor = hardware->Sensors[j];
-                        if (sensor->Name->Contains("CPU Cores")) {
-                            if (sensor->SensorType == SensorType::Power) {
-                                powerSensors->Add(sensor);
-                            }
+                for (int j = 0; j < hardware->Sensors->Length; j++) {
+                    ISensor^ sensor = hardware->Sensors[j];
+                    if (sensor->Name->Contains("CPU Cores")) {
+                        if (sensor->SensorType == SensorType::Power) {
+                            powerSensors->Add(sensor);
                         }
                     }
                 }
             }
         }
-        catch (Exception^ ex) {
-            Console::WriteLine("Error initializing sensors: " + ex->Message);
-        }
     }
 
     void RefreshHardware() {
-        try {
-            DateTime now = DateTime::Now;
-            if ((now - lastUpdate) >= updateInterval) {
-                lastUpdate = now;
+        DateTime now = DateTime::Now;
+        if ((now - lastUpdate) >= updateInterval) {
+            lastUpdate = now;
 
-                cpuPower = 0.0f;
+            cpuPower = 0.0f;
 
-                for each (ISensor ^ sensor in powerSensors) {
-                    if (sensor->Value.HasValue) {
-                        cpuPower = sensor->Value.Value;
-                    }
+            for each (ISensor ^ sensor in powerSensors) {
+                if (sensor->Value.HasValue) {
+                    cpuPower = sensor->Value.Value;
                 }
             }
-        }
-        catch (Exception^ ex) {
-            Console::WriteLine("Error in RefreshHardware: " + ex->Message);
         }
     }
 };

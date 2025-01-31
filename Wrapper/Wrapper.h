@@ -25,8 +25,6 @@ public:
 		sw->WriteLine(computer->GetReport());
 		sw->Close();
 
-        computer->
-
         lastUpdate = DateTime::Now - updateInterval;
 
         InitializeSensors();

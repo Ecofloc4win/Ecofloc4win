@@ -1,4 +1,5 @@
 import DynamicGraph from './ClassDynamicGraph'; 
+export let actualDateInSecond = 0;
 let precedentTimeStamp = 0;
 let totalW = 0;
 let numSec = 0;
@@ -48,10 +49,11 @@ let graphTOTAL = new DynamicGraph("graphTOTAL", "rgb(192, 132, 252)");
 
 startButton.addEventListener("click", () => {
     setInterval(readFile, 500);
+    document.querySelector("#exportCSV").disabled = true;
 });
 
 stopButton.addEventListener("click", () => {
     clearInterval(readFile);
+    document.querySelector("#exportCSV").disabled = false;
+    actualDateInSecond = new Date().getTime() / 1000;
 });
-
-

@@ -1,4 +1,4 @@
-import {graphCPU,graphGPU,graphNIC,graphSD} from './affichage-graphique.js'; 
+import {graphCPU,graphGPU,graphNIC,graphSD,actualDateInSecond} from './affichage-graphique.js'; 
 
 document.getElementById('exportCSV').addEventListener('click', async () => {
     try {
@@ -6,12 +6,12 @@ document.getElementById('exportCSV').addEventListener('click', async () => {
             throw new Error('graphs does not exists');
         }
 
-        monitoringStartTime = getStartMonitoringTime();
+        let monitoringStartTime = getStartMonitoringTime();
 
         // Collect data from all graphs with x and y values
         const graphData = recupGraphData(monitoringStartTime);
 
-        blob = getCsv(graphData);
+        let blob = await getCsv(graphData);
 
         launchDownload(blob);
 
@@ -52,25 +52,36 @@ const recupGraphData = (startTime) => {
         };
 } 
 
-const launchDownload = (blob) => {
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
+const launchDownload = (file) => {
+    try {
+        console.log('File received in launchDownload:', file);
+        
+        if (!(file instanceof Blob)) {
+            throw new Error('Invalid file type - expected Blob');
+        }
+        
+        let url = window.URL.createObjectURL(file);
+        console.log('Created URL:', url);
+        let a = document.createElement('a');
+        a.href = url;
 
-    const now = new Date();
-    const date = now.toISOString().split('T')[0];
-    const time = `${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}`;
-    
-    a.download = `monitoring_data_${date}_${time}.csv`;
-    
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+        let now = new Date();
+        let date = now.toISOString().split('T')[0];
+        let time = `${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}`;
+        
+        a.download = `monitoring_data_${date}_${time}.csv`;
+        
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    } catch (error) {
+        console.error('Error in launchDownload:', error);
+        throw error;
+    }
 }
 
 const getStartMonitoringTime = () => {
-    let actualDateInSecond = new Date().getTime() / 1000;
     let monitoringDuration = Math.max(
                             ...Object.values(graphCPU.data)
                             .flatMap(obj => obj.x)
@@ -79,18 +90,38 @@ const getStartMonitoringTime = () => {
 }
 
 async function getCsv(graph){
-    const response = await fetch('http://localhost:3030/export-csv', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(graph)
-    });
+    try {
+        console.log('Sending data to server:', graph);
+        
+        const response = await fetch('http://localhost:3030/export-csv', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(graph)
+        });
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Server error:', errorText);
-        throw new Error(`Export failed: ${errorText}`);
+        console.log('Server response status:', response.status);
+        console.log('Server response headers:', [...response.headers.entries()]);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server error:', errorText);
+            throw new Error(`Export failed: ${errorText}`);
+        }
+
+        const blob = await response.blob();
+        console.log('Blob created:', blob);
+        console.log('Blob type:', blob.type);
+        console.log('Blob size:', blob.size);
+
+        if (!blob || blob.size === 0) {
+            throw new Error('Received empty blob from server');
+        }
+
+        return blob;
+    } catch (error) {
+        console.error('Error in getCsv:', error);
+        throw error;
     }
-    return await response.blob();
 }

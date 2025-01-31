@@ -35,7 +35,7 @@
     <main class="flex-1 flex flex-col w-full bg-zinc-900 text-white">
         <!-- Export Button -->
         <div class="absolute left-4 top-24 z-10">
-            <button id="exportCSV" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded flex items-center gap-2 transition-colors duration-300">
+            <button id="exportCSV" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded flex items-center gap-2 transition-colors duration-300" disabled>
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
@@ -44,8 +44,33 @@
         </div>
             
         <!-- Graphs -->
-        <div id="flex-graphique" class="list-graph h-3/4 flex-1">
-                
+        <div id="flex-graph" class="list-graph h-3/4 flex-1">
+            <div id="boxCPU" class="graph">
+                <h3 class="text-center font-semibold">CPU</h3>
+                <div id="graphCPU" class="flex h-full"></div>
+            </div>
+            <div id="boxGPU" class="graph">
+                <h3 class="text-center font-semibold">GPU</h3>
+                <div id="graphGPU" class="flex h-full"></div>
+            </div>
+            <div id="boxNIC" class="graph">
+                <h3 class="text-center font-semibold">NIC</h3>
+                <div id="graphNIC" class="flex h-full"></div>
+            </div>
+            <div id="boxSD" class="graph">
+                <h3 class="text-center font-semibold">SD</h3>
+                <div id="graphSD" class="flex h-full"></div>
+            </div>
+            <div id="boxTOTAL" class="graph">
+                <h3 class="text-center font-semibold">Total Consumption</h3>
+                <div id="graphTOTAL" class="flex h-full"></div>
+            </div>
+            <div class="graph">
+                <h3 class="text-center font-semibold">RAM</h3>
+                <div class="flex flex-grow justify-center items-center h-[90%] bg-wip rounded-md">
+                    <p class="text-center font-bold bg-zinc-800 p-4 rounded-md fixed wip">Work in progress</p>
+                </div>
+            </div>
         </div>
 
         <!-- Options & Table -->
@@ -53,7 +78,7 @@
             <aside id="options">
                 <!-- Ipt-TimeStamp -->
                 <div id="input_ts" class="mt-4 sidebar-transition">
-                    <label class="block mb-2">Intervalle (ms)</label>
+                    <label class="block mb-2">Interval (ms)</label>
                     <input type="number" min="500" value="1000" max="30000" step="250" class="w-full bg-zinc-700 text-white p-2 rounded-md">
                 </div>
                 <!-- Play/Stop buttons -->
@@ -131,34 +156,27 @@
 
 
         function executeScript() {
-        // Adresse de votre serveur Node.js
         const serverUrl = 'http://localhost:3030/execute';
-
-        // Envoi d'une requête POST au serveur
         fetch(serverUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            // Ajoutez des données si nécessaire
             body: JSON.stringify({}),
         })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    console.log('Script exécuté avec succès :', data.stdout);
-                } else {
-                    console.error(`Erreur lors de l'exécution :`, data.message);
-                    alert(`Erreur : ${data.message}`);
+                if (!data.success) {
+                    console.error(`Data error :`, data.message);
+                    alert(`Error : ${data.message}`);
                 }
             })
             .catch(error => {
-                console.error('Erreur réseau ou serveur :', error);
-                alert('Impossible de contacter le serveur.');
+                console.error('Network or server error :', error);
+                alert('Unable to contact the server.');
             });
         }
 
-        // Définir la fonction stopExecutable en dehors de executeScript
         function stopExecutable() {
             fetch('http://localhost:3030/stop', {
                 method: 'POST',
@@ -224,6 +242,7 @@
                 });
         }
     </script>
+    <script src="../Js/mapperApplication.js" type="module"></script>
     <script src="../Js/ClassApplication.js" type="module"></script>
     <script src="../Js/process-filter.js" type="module"></script>
     <script src="../Js/ClassDynamicGraph.js" type="module"></script>

@@ -3,7 +3,7 @@ import Application from '../Js/ClassApplication';
 
 describe('Application', () => {
     it('Creating an Application', () => {
-        // WHEN
+        // GIVEN
         let uneApplication = new Application("Test",[0,1,2], "Browser");
         
         // THEN

@@ -64,7 +64,6 @@ const fileUtils = {
             
             // Collect all timestamps first
             Object.entries(graphData).forEach(([component, data]) => {
-                console.log(`Processing component ${component}, data:`, Object.keys(data));
                 Object.entries(data).forEach(([pid, trace]) => {
                     if (trace && Array.isArray(trace.x)) {
                         trace.x.forEach(timestamp => allTimestamps.add(timestamp));
@@ -74,7 +73,6 @@ const fileUtils = {
 
             // Sort timestamps
             const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b);
-            console.log(`Found ${sortedTimestamps.length} unique timestamps`);
             
             // Add data rows
             sortedTimestamps.forEach(timestamp => {
@@ -95,8 +93,6 @@ const fileUtils = {
                     });
                 });
             });
-
-            console.log(`Generated ${rows.length} rows of data`);
         } catch (error) {
             console.error('Error processing data:', error);
             throw new Error(`Failed to process data: ${error.message}`);

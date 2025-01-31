@@ -1,11 +1,11 @@
-import Application from './ClassApplication'; 
 import { areSetsEqual } from './areSetsEqual';
+import MapperApplication from './mapperApplication';
 
-const listeProcessusHtmlElement = document.getElementById("ListeProcessus");
+const listProcessHtmlElement = document.getElementById("ListeProcessus");
 const tableFilterHtmlElement = document.getElementById("TableFilter");
 const checkBoxSelectAllProcElement = document.getElementById("SelectAllProc");
 
-let mesProcessus = [];
+let myProcesses = [];
 let setCategorie = new Set();
 
 
@@ -55,51 +55,53 @@ function makeGroupApplication(){
                     allFilterElement.checked = atLeastOne;
                     allFilterElement.indeterminate = (!all && atLeastOne); 
                 }
-                afficherListeProcessus();
+                showProcessList();
             });
         }
     }
 }
 
-function parseDataToMyProcesses(data){
-    if(data){
-        mesProcessus = [];
+function parseDataToMyProcesses(data)
+{
+    if(data)
+    {
+        myProcesses = [];
         const oldCategorie = setCategorie;
         setCategorie = new Set();
         setCategorie.add("All");
         setCategorie.add("Other");
-        data.forEach(process => {
-            let uneApplication = new Application(process.name,process.pids, process.categorie);
-            mesProcessus.push(uneApplication);
-            if(uneApplication.categorie != "") {
-                setCategorie.add(uneApplication.categorie);
+        myProcesses = MapperApplication.mapperApplicationsFromJson(data);
+        for(let aProcess of myProcesses)
+        {
+            if(aProcess.categorie != "") 
+            {
+                setCategorie.add(aProcess.categorie);
             }
-        });
+        }
         if(!areSetsEqual(oldCategorie, setCategorie)) {
             makeGroupApplication();
         }
-        afficherListeProcessus();
+        showProcessList();
     }
 }
 
 fetch('../Json/process.json')
 .then(response => {
-    // Vérifier si la réponse est correcte
+    // Check if the answer is correct
     if (!response.ok) {
-        throw new Error('Erreur de chargement du fichier JSON');
+        throw new Error('Error loading JSON file');
     }
-    return response.json();  // Parse le JSON
+    return response.json(); // return the JSON
 })
 .then(data => {
-
-    // Afficher chaque processus dans la liste
     parseDataToMyProcesses(data);
 })
 .catch(error => {
-    console.error('Erreur:', error);
+    console.error('Error:', error);
 });
 
-function getFilterCategorie(nomCategorie) {
+function getFilterCategorie(nomCategorie) 
+{
     for(let filter of tableFilterHtmlElement.querySelectorAll("input")){
         if(filter.value == nomCategorie){
             return filter.checked;
@@ -109,49 +111,51 @@ function getFilterCategorie(nomCategorie) {
     return otherFilterElement.checked;
 }
 
-function changePidState(nomProc, pidProc, etat) {
-    // Adresse de votre serveur Node.js
+function changePidState(nomProc, pidProc, etat) 
+{
     const serverUrl = 'http://localhost:3030/changePidState';
-    // Envoi d'une requête POST au serveur
     fetch(serverUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        // Ajoutez les données
         body: JSON.stringify({ nomProc, pidProc, etat }),
     })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                //console.log('Script exécuté avec succès');
-            } else {
-                console.error('Erreur lors de l\'exécution :', data.message);
-                alert(`Erreur : ${data.message}`);
+            if (!data.success) {
+                console.error('Error during execution :', data.message);
+                alert(`Error : ${data.message}`);
             }
         })
         .catch(error => {
-            console.error('Erreur réseau ou serveur :', error);
-            alert('Impossible de contacter le serveur.');
+            console.error('Network or server error :', error);
+            alert('Unable to contact the server.');
         });
 }
 
 
 
-function afficherListeProcessus() {
-    while (listeProcessusHtmlElement.firstChild) {
-        listeProcessusHtmlElement.removeChild(listeProcessusHtmlElement.firstChild);
+function showProcessList() 
+{
+    while (listProcessHtmlElement.firstChild) 
+    {
+        listProcessHtmlElement.removeChild(listProcessHtmlElement.firstChild);
     }
     const searchText = document.getElementById("SearchBar").value == "" ? "":document.getElementById("SearchBar").value.toLowerCase();
     let atLeastOneChecked = false;
     let allChecked = true;
-    for(let unProcessus of mesProcessus){
-        if (!unProcessus.getName().toLowerCase().includes(searchText)){
+    for(let unProcessus of myProcesses)
+    {
+        if (!unProcessus.getName().toLowerCase().includes(searchText))
+        {
             continue;
         }
-        if(getFilterCategorie(unProcessus.categorie)){
-            for(let unPid of unProcessus.getListePid()){
-                // Créer les éléments
+        if(getFilterCategorie(unProcessus.categorie))
+        {
+            for(let unPid of unProcessus.getListePid())
+            {
+                // Create html elements for pids
                 const lineDiv = document.createElement("div");
                 lineDiv.className = "line";
 
@@ -165,9 +169,12 @@ function afficherListeProcessus() {
                 const inputCheckbox = document.createElement("input");
                 inputCheckbox.type = "checkbox";
                 col2Div.textContent = unPid["numeroPid"];
-                if(unPid["checked"]){
+                if(unPid["checked"])
+                {
                     atLeastOneChecked = true;
-                }else{
+                }
+                else
+                {
                     allChecked = false;
                 }
                 inputCheckbox.checked = unPid["checked"];
@@ -179,14 +186,14 @@ function afficherListeProcessus() {
                     const dataNumeroPid = event.target.getAttribute("data-numero-pids");
                     changePidState(dataNomProcessus, dataNumeroPid,clickedCheckbox.checked);
                 });
-                col2Div.appendChild(inputCheckbox); // Ajouter la case à cocher à col-2
+                col2Div.appendChild(inputCheckbox); 
 
-                // Ajouter les colonnes à la ligne
+                // Add columns to line
                 lineDiv.appendChild(col1Div);
                 lineDiv.appendChild(col2Div);
 
-                // Ajouter la ligne à l'élément parent
-                listeProcessusHtmlElement.appendChild(lineDiv);
+                // Add line to parent element
+                listProcessHtmlElement.appendChild(lineDiv);
             }
         }
     }
@@ -194,30 +201,37 @@ function afficherListeProcessus() {
     checkBoxSelectAllProcElement.indeterminate = (!allChecked && atLeastOneChecked); 
 }
 
-function selectAllPid(etat) {
+function selectAllPid(etat) 
+{
     const searchText = document.getElementById("SearchBar").value.toLowerCase();
     let listePidAChanger = new Set();
 
     // Collect all visible processes based on search and filters
-    for(let unProcessus of mesProcessus) {
-        if (searchText && !unProcessus.getName().toLowerCase().includes(searchText)) {
+    for(let unProcessus of myProcesses) 
+    {
+        if (searchText && !unProcessus.getName().toLowerCase().includes(searchText)) 
+        {
             continue;
         }
-        if(!getFilterCategorie(unProcessus.categorie)) {
+        if(!getFilterCategorie(unProcessus.categorie)) 
+        {
             continue;
         }
         listePidAChanger.add(unProcessus.getName());
     }
 
     // Update UI immediately for better responsiveness
-    for(let unProcessus of mesProcessus) {
-        if(listePidAChanger.has(unProcessus.getName())) {
-            for(let unPid of unProcessus.getListePid()) {
+    for(let unProcessus of myProcesses) 
+    {
+        if(listePidAChanger.has(unProcessus.getName())) 
+        {
+            for(let unPid of unProcessus.getListePid()) 
+            {
                 unPid.checked = etat;
             }
         }
     }
-    afficherListeProcessus();
+    showProcessList();
 
     // Send update to server
     fetch('http://localhost:3030/updateProcessListState', {
@@ -254,7 +268,7 @@ eventSource.onmessage = (event) => {
             const data = JSON.parse(event.data);
             if(!data)
             {
-                console.error("Erreur data vide");
+                console.error("Empty data error");
             }
             else
             {
@@ -263,15 +277,10 @@ eventSource.onmessage = (event) => {
         }
         
     } catch (err) {
-        console.error('Erreur de parsing des données:', err);
+        console.error('Data parsing error:', err);
     }
 };
 
-eventSource.onerror = () => {
-    //console.error('Erreur de connexion au serveur SSE');
-};
-
 document.getElementById("SearchBar").addEventListener("keyup", () => {
-    const searchText = document.getElementById("SearchBar").value;
-    afficherListeProcessus();
+    showProcessList();
 });

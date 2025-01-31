@@ -1,17 +1,22 @@
-class Application {
-    constructor(name, listePid, categorie){
+class Application 
+{
+    constructor(name, listePid, categorie)
+    {
         this.name = name;
         this.listePid = listePid;
         this.categorie = categorie;
     }
 
-    getName(){
+    getName()
+    {
         return this.name;
     }
-    getListePid(){
+    getListePid()
+    {
         return this.listePid;
     }
-    getCategorie(){
+    getCategorie()
+    {
         return this.categorie;
     }
 }

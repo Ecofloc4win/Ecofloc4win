@@ -1011,15 +1011,6 @@ std::wstring getLocalizedCounterPath(const std::wstring& processName, const std:
 
 void addProcPid(const std::string& pid, const std::string& component)
 {
-	//can be global
-	std::unordered_map<std::string, ComponentType> componentMap =
-	{
-		{ "CPU", ComponentType::CPU },
-		{ "GPU", ComponentType::GPU },
-		{ "SD", ComponentType::SD },
-		{ "NIC", ComponentType::NIC }
-	};
-
 	try
 	{
 		int processId = std::stoi(pid); // Convert PID to integer
@@ -1084,14 +1075,6 @@ void addProcPid(const std::string& pid, const std::string& component)
 
 void addProcName(const std::string& name, const std::string& component)
 {
-	std::unordered_map<std::string, ComponentType> componentMap =
-	{
-		{ "CPU", ComponentType::CPU },
-		{ "GPU", ComponentType::GPU },
-		{ "SD", ComponentType::SD },
-		{ "NIC", ComponentType::NIC }
-	};
-
 	HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
 	if (hSnapshot == INVALID_HANDLE_VALUE)
@@ -1261,14 +1244,6 @@ void removeProcByLineNumber(const std::string& lineNumber) noexcept
 
 void enable(const std::string& lineNumber, const std::string& component)
 {
-	std::unordered_map<std::string, ComponentType> comp =
-	{
-		{ "CPU", ComponentType::CPU },
-		{ "GPU", ComponentType::GPU },
-		{ "SD", ComponentType::SD },
-		{ "NIC", ComponentType::NIC }
-	};
-
 	try
 	{
 		int line = std::stoi(lineNumber);
@@ -1288,8 +1263,8 @@ void enable(const std::string& lineNumber, const std::string& component)
 		auto& data = monitoringData[line];
 		data.enableComponent(component);
 
-		auto it = comp.find(component);
-		if (it != comp.end())
+		auto it = componentMap.find(component);
+		if (it != componentMap.end())
 		{
 			it->second;
 		}
@@ -1329,14 +1304,6 @@ void enable(const std::string& lineNumber, const std::string& component)
 
 void disable(const std::string& lineNumber, const std::string& component)
 {
-	std::unordered_map<std::string, ComponentType> comp =
-	{
-		{ "CPU", ComponentType::CPU },
-		{ "GPU", ComponentType::GPU },
-		{ "SD", ComponentType::SD },
-		{ "NIC", ComponentType::NIC }
-	};
-
 	try
 	{
 		int line = std::stoi(lineNumber);
@@ -1356,8 +1323,8 @@ void disable(const std::string& lineNumber, const std::string& component)
 		auto& data = monitoringData[line];
 		data.disableComponent(component);
 
-		auto it = comp.find(component);
-		if (it != comp.end())
+		auto it = componentMap.find(component);
+		if (it != componentMap.end())
 		{
 			it->second;
 		}

@@ -1,26 +1,39 @@
-#include "gpu.h"
+/**
+ * @file GPU.cpp
+ * @brief Definition of GPU management features.
+ * @author Ecofloc's Team
+ * @date 2025-02-03
+ */
+
+#include "GPU.h"
 
 #include <iostream>
 #include <vector>
 #include <Windows.h>
 
-// Define NVML types and constants
+#define NVML_SUCCESS 0
+
+/**
+ * @brief Defines NVML types and constants
+ */
 typedef int nvmlReturn_t;
 typedef void* nvmlDevice_t;
+
 typedef struct nvmlUtilization_st 
 {
     unsigned int gpu;
     unsigned int memory;
 } nvmlUtilization_t;
+
 typedef struct nvmlProcessInfo_st 
 {
     unsigned int pid;
     unsigned long long usedGpuMemory;
 } nvmlProcessInfo_t;
 
-#define NVML_SUCCESS 0
-
-// Define function pointers for NVML functions
+/**
+ * @brief Defines function pointers for NVML functions
+ */
 typedef nvmlReturn_t(*NvmlInit_t)();
 typedef nvmlReturn_t(*NvmlShutdown_t)();
 typedef nvmlReturn_t(*NvmlDeviceGetCount_t)(unsigned int*);
@@ -30,74 +43,85 @@ typedef nvmlReturn_t(*NvmlDeviceGetComputeRunningProcesses_t)(nvmlDevice_t, unsi
 typedef nvmlReturn_t(*NvmlDeviceGetPowerUsage_t)(nvmlDevice_t, unsigned int*);
 typedef const char* (*NvmlErrorString_t)(nvmlReturn_t);
 
+/**
+ * @class NVMLManager
+ * @brief Class for NVMLManager-related functionalities.
+ */
 class NVMLManager 
 {
-public:
-    static NVMLManager& getInstance() 
-    {
-        static NVMLManager instance;
-        return instance;
-    }
-
-    bool initialize() 
-    {
-        if (!nvmlLib) 
+    public:
+        static NVMLManager& getInstance() 
         {
-            nvmlLib = LoadLibrary(L"nvml.dll");
+            static NVMLManager instance;
+            return instance;
+        }
+
+        bool initialize() 
+        {
             if (!nvmlLib) 
             {
-                std::cerr << "NVML library not found. Ensure NVIDIA drivers are installed.\n";
-                return false;
+                nvmlLib = LoadLibrary(L"nvml.dll");
+                if (!nvmlLib) 
+                {
+                    std::cerr << "NVML library not found. Ensure NVIDIA drivers are installed.\n";
+                    return false;
+                }
+
+                nvmlInit = reinterpret_cast<NvmlInit_t>(GetProcAddress(nvmlLib, "nvmlInit"));
+                nvmlShutdown = reinterpret_cast<NvmlShutdown_t>(GetProcAddress(nvmlLib, "nvmlShutdown"));
+                nvmlDeviceGetCount = reinterpret_cast<NvmlDeviceGetCount_t>(GetProcAddress(nvmlLib, "nvmlDeviceGetCount"));
+                nvmlDeviceGetHandleByIndex = reinterpret_cast<NvmlDeviceGetHandleByIndex_t>(GetProcAddress(nvmlLib, "nvmlDeviceGetHandleByIndex"));
+                nvmlDeviceGetUtilizationRates = reinterpret_cast<NvmlDeviceGetUtilizationRates_t>(GetProcAddress(nvmlLib, "nvmlDeviceGetUtilizationRates"));
+                nvmlDeviceGetComputeRunningProcesses = reinterpret_cast<NvmlDeviceGetComputeRunningProcesses_t>(GetProcAddress(nvmlLib, "nvmlDeviceGetComputeRunningProcesses"));
+                nvmlDeviceGetPowerUsage = reinterpret_cast<NvmlDeviceGetPowerUsage_t>(GetProcAddress(nvmlLib, "nvmlDeviceGetPowerUsage"));
+                nvmlErrorString = reinterpret_cast<NvmlErrorString_t>(GetProcAddress(nvmlLib, "nvmlErrorString"));
+
+                if (!nvmlInit || !nvmlShutdown
+                || !nvmlDeviceGetCount || !nvmlDeviceGetHandleByIndex
+                || !nvmlDeviceGetUtilizationRates || !nvmlDeviceGetComputeRunningProcesses
+                || !nvmlDeviceGetPowerUsage || !nvmlErrorString) 
+                {
+                    std::cerr << "Failed to locate NVML functions in the library.\n";
+                    FreeLibrary(nvmlLib);
+                    nvmlLib = nullptr;
+                    return false;
+                }
             }
+            return true;
+        }
 
-            nvmlInit = reinterpret_cast<NvmlInit_t>(GetProcAddress(nvmlLib, "nvmlInit"));
-            nvmlShutdown = reinterpret_cast<NvmlShutdown_t>(GetProcAddress(nvmlLib, "nvmlShutdown"));
-            nvmlDeviceGetCount = reinterpret_cast<NvmlDeviceGetCount_t>(GetProcAddress(nvmlLib, "nvmlDeviceGetCount"));
-            nvmlDeviceGetHandleByIndex = reinterpret_cast<NvmlDeviceGetHandleByIndex_t>(GetProcAddress(nvmlLib, "nvmlDeviceGetHandleByIndex"));
-            nvmlDeviceGetUtilizationRates = reinterpret_cast<NvmlDeviceGetUtilizationRates_t>(GetProcAddress(nvmlLib, "nvmlDeviceGetUtilizationRates"));
-            nvmlDeviceGetComputeRunningProcesses = reinterpret_cast<NvmlDeviceGetComputeRunningProcesses_t>(GetProcAddress(nvmlLib, "nvmlDeviceGetComputeRunningProcesses"));
-            nvmlDeviceGetPowerUsage = reinterpret_cast<NvmlDeviceGetPowerUsage_t>(GetProcAddress(nvmlLib, "nvmlDeviceGetPowerUsage"));
-            nvmlErrorString = reinterpret_cast<NvmlErrorString_t>(GetProcAddress(nvmlLib, "nvmlErrorString"));
-
-            if (!nvmlInit || !nvmlShutdown || !nvmlDeviceGetCount || !nvmlDeviceGetHandleByIndex || !nvmlDeviceGetUtilizationRates || !nvmlDeviceGetComputeRunningProcesses || !nvmlDeviceGetPowerUsage || !nvmlErrorString) 
+        void shutdown() 
+        {
+            if (nvmlLib) 
             {
-                std::cerr << "Failed to locate NVML functions in the library.\n";
                 FreeLibrary(nvmlLib);
                 nvmlLib = nullptr;
-                return false;
             }
         }
-        return true;
-    }
 
-    void shutdown() 
-    {
-        if (nvmlLib) 
+        NvmlInit_t nvmlInit = nullptr;
+        NvmlShutdown_t nvmlShutdown = nullptr;
+        NvmlDeviceGetCount_t nvmlDeviceGetCount = nullptr;
+        NvmlDeviceGetHandleByIndex_t nvmlDeviceGetHandleByIndex = nullptr;
+        NvmlDeviceGetUtilizationRates_t nvmlDeviceGetUtilizationRates = nullptr;
+        NvmlDeviceGetComputeRunningProcesses_t nvmlDeviceGetComputeRunningProcesses = nullptr;
+        NvmlDeviceGetPowerUsage_t nvmlDeviceGetPowerUsage = nullptr;
+        NvmlErrorString_t nvmlErrorString = nullptr;
+
+    private:
+        NVMLManager() = default;
+        ~NVMLManager() 
         {
-            FreeLibrary(nvmlLib);
-            nvmlLib = nullptr;
+            shutdown();
         }
-    }
 
-    NvmlInit_t nvmlInit = nullptr;
-    NvmlShutdown_t nvmlShutdown = nullptr;
-    NvmlDeviceGetCount_t nvmlDeviceGetCount = nullptr;
-    NvmlDeviceGetHandleByIndex_t nvmlDeviceGetHandleByIndex = nullptr;
-    NvmlDeviceGetUtilizationRates_t nvmlDeviceGetUtilizationRates = nullptr;
-    NvmlDeviceGetComputeRunningProcesses_t nvmlDeviceGetComputeRunningProcesses = nullptr;
-    NvmlDeviceGetPowerUsage_t nvmlDeviceGetPowerUsage = nullptr;
-    NvmlErrorString_t nvmlErrorString = nullptr;
-
-private:
-    NVMLManager() = default;
-    ~NVMLManager() 
-    {
-        shutdown();
-    }
-
-    HMODULE nvmlLib = nullptr;
+        HMODULE nvmlLib = nullptr;
 };
 
+/**
+ * @namespace GPU
+ * @brief Namespace for GPU-related functionalities.
+ */
 namespace GPU 
 {
     int initNVML() 
@@ -128,7 +152,7 @@ namespace GPU
         return 0;
     }
 
-    int gpu_usage(int pid) 
+    int gpuUsage(int pid) 
     {
         NVMLManager& nvml = NVMLManager::getInstance();
         if (!nvml.initialize()) 
@@ -162,7 +186,7 @@ namespace GPU
         }
 
         // Iterate over each device
-        for (unsigned int i = 0; i < deviceCount; ++i) 
+        for (unsigned int i = 0; i < deviceCount; ++i)
         {
             result = nvml.nvmlDeviceGetHandleByIndex(i, &device);
             if (result != NVML_SUCCESS) 
@@ -188,9 +212,9 @@ namespace GPU
             }
 
             // Search for the process by PID
-            for (unsigned int j = 0; j < infoCount; ++j) 
+            for (unsigned int j = 0; j < infoCount; ++j)
             {
-                if (processInfo[j].pid == pid) 
+                if (processInfo[j].pid == pid)
                 {
                     // Approximation: Report total GPU utilization
                     usage = utilization.gpu; // Aggregate GPU utilization
@@ -199,7 +223,7 @@ namespace GPU
             }
         }
 
-    cleanup:
+        cleanup:
         // Cleanup NVML
         nvml.nvmlShutdown();
         return usage;
@@ -211,7 +235,7 @@ namespace GPU
         std::vector<int> results;
         for (int pid : pids) 
         {
-            results.push_back(gpu_usage(pid));
+            results.push_back(gpuUsage(pid));
         }
         return results;
     }
@@ -268,7 +292,7 @@ namespace GPU
         int results = 0;
         for (int pid : pids) 
         {
-            int usage = gpu_usage(pid);
+            int usage = gpuUsage(pid);
             int power = getGPUPower();
             double power_used = ((usage / 100.0) * power);
             results += power_used * interval_s;

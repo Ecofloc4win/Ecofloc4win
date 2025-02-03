@@ -1,6 +1,12 @@
+/**
+ * @file ecofloc4win.cpp
+ * @brief The main program.
+ * @author Ecofloc's Team
+ * @date 2025-01-06
+ */
+
 #define NOMINMAX
 //#define WIN32_LEAN_AND_MEAN  // Prevent inclusion of unnecessary Windows headers
-
 #define WIN32_WINNT 0x0600  // Vista and later
 
 #include <winsock2.h>        // Include Winsock2 before windows.h to avoid conflicts
@@ -30,7 +36,7 @@
 #include <atomic>
 
 #include "process.h"         // Custom header for process handling
-#include "gpu.h"             // Custom header for GPU monitoring
+#include "GPU.h"             // Custom header for GPU monitoring
 #include "CPU.h"
 #include "MonitoringData.h"  // Custom header for monitoring data
 #include "Utils.h"
@@ -45,29 +51,40 @@
 
 using namespace ftxui;
 
+/**
+ * @brief The array that content all the energy used by each component for each process
+ */
 std::vector<MonitoringData> monitoringData = {};
-std::condition_variable new_data_cv;
-std::mutex data_mutex;
-std::atomic<bool> new_data_cpu(false);
-std::atomic<bool> new_data_gpu(false);
-std::atomic<bool> new_data_sd(false);
-std::atomic<bool> new_data_nic(false);
 
-void readCommand(string);
+/**
+ * @brief Protects shared data
+ */
+std::mutex dataMutex;
 
-void addProcPid(const string&, const string&);
-void addProcName(const string&, const string&);
+/**
+ * @brief Stores CPU newest data
+ */
+std::atomic<bool> newDataCpu(false);
 
-void removeProcByLineNumber(const string&) noexcept;
-void removeProcPid(string, string);
+/**
+ * @brief Stores GPU newest data
+ */
+std::atomic<bool> newDataGpu(false);
 
-void enable(const string&, const string&);
-void disable(const string&, const string&);
+/**
+ * @brief Stores SD newest data
+ */
+std::atomic<bool> newDataSd(false);
 
-std::wstring getLocalizedCounterPath(const std::wstring& processName, const std::string& counterName);
+/**
+ * @brief Stores NIC newest data
+ */
+std::atomic<bool> newDataNic(false);
 
-// Actions map for command handling
-unordered_map<string, int> actions =
+/**
+ * @brief List of action you can do when using ecofloc
+ */
+std::unordered_map<string, int> actions =
 {
 	{"enable", 1},
 	{"disable", 2},
@@ -77,33 +94,619 @@ unordered_map<string, int> actions =
 	{"quit", 6},
 };
 
-wstring GetProcessNameByPID(DWORD processID)
-{
-	TCHAR processName[MAX_PATH] = TEXT("<unknown>");
+/**
+ * 
+ *
+ * can be replace
+ */
+std::unordered_map<string, pair<vector<process>, bool>> comp = { {"CPU", {{}, false}}, {"GPU", {{}, false} }, {"SD", {{}, false }}, {"NIC", {{}, false }} };
 
-	// Get a handle to the process
-	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, processID);
-
-	// Check if we successfully got a handle to the process
-	if (hProcess) {
-		// Get the process name
-		if (GetModuleBaseName(hProcess, nullptr, processName, sizeof(processName) / sizeof(TCHAR))) {
-			CloseHandle(hProcess); // Close handle when done
-			return processName;
-		}
-		CloseHandle(hProcess); // Close handle even if we fail
-	}
-
-	return L"<unknown>";
-}
-
-unordered_map<string, pair<vector<process>, bool>> comp = { {"CPU", {{}, false}}, {"GPU", {{}, false} }, {"SD", {{}, false }}, {"NIC", {{}, false }} };
-
+/**
+ * @brief The time interval between 2 calculations in millisecond
+ */
 std::atomic<int> interval = 500;
 
-/*
-* This function gets the index of a counter in the registry based on its name.
-*/
+/**
+ * @brief Reads the command written by the user and called the right function
+ * 
+ * @param commandHandle the command written by the user
+ */
+void readCommand(std::string commandHandle);
+
+/**
+ * @brief Adds a process to monitor on the chosen component
+ *
+ * @param pid The ID of the process to add
+ * @param component The name of the component where the pid is added
+ */
+void addProcPid(const std::string& pid, const std::string& component);
+
+/**
+ * @brief Adds a process to monitor on the chosen component
+ *
+ * @param name The name of the process to add
+ * @param component The name of the component where the pid is added
+ */
+void addProcName(const std::string& name, const std::string& component);
+
+/**
+ * @brief Removes a process from monitoring
+ *
+ * @param lineNumber The number of the line that match the process to remove
+ */
+void removeProcByLineNumber(const std::string& lineNumber) noexcept;
+
+/**
+ * @brief Enables the monitoring of the component for a specified process
+ *
+ * @param lineNumber The number of the line that match the process wanted
+ * @param component The name of the component to enable
+ */
+void enable(const std::string& lineNumber, const std::string& component);
+
+/**
+ * @brief Disables the monitoring of the component for a specified process
+ *
+ * @param lineNumber The number of the line that match the process wanted
+ * @param component The name of the component to disable
+ */
+void disable(const std::string& lineNumber, const std::string& component);
+
+/**
+ * @brief Gets the localized counter path for a given process name and counter name to be used in PDH functions
+ * 		  and avoid hardcoding the counter path for each language.
+ *
+ * @param processName The name of the process
+ * @param counterName The name of the counter
+ * @return wstring the localized counter path for the process
+ */
+std::wstring getLocalizedCounterPath(const std::wstring& processName, const std::string& counterName);
+
+/**
+ * @brief Retrieves the name of the Process thank to its ID
+ *
+ * @param processID The ID of the Process
+ * @return wstring the name of the Process
+ */
+wstring getProcessNameByPID(DWORD processID);
+
+/**
+ * @brief Gets the index of a counter in the registry based on its name.
+ *
+ * @param counterName The name of the counter
+ * @return DWORD the Index of the counter
+ */
+DWORD getCounterIndex(const std::string& counterName);
+
+/**
+ * @brief Gets the name of the instance for a given process ID.
+ * 
+ * @param targetPID The pid
+ * @return wstring the name of the instance
+ */
+std::wstring getInstanceForPID(int targetPID);
+
+/**
+ * @brief Generates all rows of the table to show in the terminal
+ * 
+ * @return vector of vectors of strings the results' table 
+ */
+auto createTableRows() -> std::vector<std::vector<std::string>>
+{
+	std::vector<std::vector<std::string>> rows;
+	std::lock_guard<std::mutex> lock(dataMutex);
+
+	rows.emplace_back(std::vector<std::string>{"Application Name", "CPU", "GPU", "SD", "NIC"});
+	for (const auto& data : monitoringData)
+	{
+		rows.emplace_back(std::vector<std::string>
+		{
+			data.getName(),
+			std::to_string(data.getCPUEnergy()),
+			std::to_string(data.getGPUEnergy()),
+			std::to_string(data.getSDEnergy()),
+			std::to_string(data.getNICEnergy())
+		});
+	}
+
+	return rows;
+}
+
+/**
+ * @brief Shows the table in the terminal
+ *
+ * @param scrollPosition The current position of the scroll
+ * @return Element the render of the complete table 
+ */
+auto renderTable(int scrollPosition) -> Element
+{
+	auto tableData = createTableRows();
+	int terminalHeight = getTerminalHeight();
+	int visibleRows = terminalHeight - 8; // Adjust for input box and borders
+
+	// Prepare rows for the visible portion
+	std::vector<std::vector<std::string>> visibleTableData;
+	visibleTableData.push_back(tableData[0]); // Header row
+	for (int i = scrollPosition + 1; i < std::min(scrollPosition + visibleRows + 1, (int)tableData.size()); ++i)
+	{
+		visibleTableData.push_back(tableData[i]);
+	}
+
+	auto table = Table(visibleTableData);
+
+	// Style the table
+	table.SelectAll().Border(LIGHT);
+	table.SelectRow(0).Decorate(bold);
+	table.SelectRow(0).DecorateCells(center);
+	table.SelectRow(0).SeparatorVertical(LIGHT);
+	table.SelectRow(0).Border();
+	table.SelectColumn(0).Decorate(flex);
+	table.SelectColumns(0, -1).SeparatorVertical(LIGHT);
+	auto content = table.SelectRows(1, -1);
+	content.DecorateCellsAlternateRow(color(Color::Red), 3, 0);
+	content.DecorateCellsAlternateRow(color(Color::RedLight), 3, 1);
+	content.DecorateCellsAlternateRow(color(Color::White), 3, 2);
+
+	return table.Render() | flex;
+}
+
+int main()
+{
+	std::string input;
+	Component inputBox = Input(&input, "Type here");
+	inputBox |= CatchEvent([&](Event event)
+	{
+		if (event == Event::Return)
+		{
+			if (!input.empty())
+			{
+				readCommand(input);
+				input.clear();
+			}
+			return true;
+		}
+		return false;
+	});
+
+	auto screen = ScreenInteractive::Fullscreen();
+
+	// State variables for scrolling
+	int scrollPosition = 0;
+
+	// Component to handle input and update the scroll position
+	auto component = Renderer(inputBox, [&]
+	{
+		return vbox(
+			{
+				renderTable(scrollPosition),
+				separator(),
+				hbox(
+				{
+					text("Command: "), inputBox->Render()
+				}),
+			}) | border;
+	});
+
+	component = CatchEvent(component, [&](Event event)
+	{
+		int terminalHeight = getTerminalHeight();
+		int visibleRows = terminalHeight - 8;
+
+		if ((int)monitoringData.size() <= visibleRows)
+		{
+			scrollPosition = 0; // Disable scrolling if all rows fit
+			return false;
+		}
+
+		// Handle mouse wheel and arrow key events
+		if (event.is_mouse())
+		{
+			if (event.mouse().button == Mouse::WheelDown)
+			{
+				scrollPosition = std::min(scrollPosition + 1, (int)monitoringData.size() - visibleRows - 1);
+				return true;
+			}
+
+			if (event.mouse().button == Mouse::WheelUp)
+			{
+				scrollPosition = std::max(scrollPosition - 1, 0);
+				return true;
+			}
+		}
+
+		if (event == Event::ArrowDown)
+		{
+			scrollPosition = std::min(scrollPosition + 1, (int)monitoringData.size() - visibleRows - 1);
+			return true;
+		}
+
+		if (event == Event::ArrowUp)
+		{
+			scrollPosition = std::max(scrollPosition - 1, 0);
+			return true;
+		}
+
+		return false;
+	});
+
+	std::thread gpuThread([&screen]
+	{
+		std::vector<MonitoringData> localMonitoringData;
+		while (true)
+		{
+			// check if new_data is false and localMonitoringData is empty
+			if (newDataGpu.load(std::memory_order_release) == false && localMonitoringData.empty())
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+				continue;
+			}
+
+			if (newDataGpu)
+			{
+				std::unique_lock<std::mutex> lock(dataMutex);
+				localMonitoringData = monitoringData;
+				newDataGpu.store(false, std::memory_order_release);
+			}
+
+			for (auto& data : localMonitoringData)
+			{
+				if (!data.isGPUEnabled() || data.getPids().empty())
+				{
+					continue;
+				}
+
+				int gpuJoules = GPU::getGPUJoules(data.getPids(), interval);
+
+				{
+					std::lock_guard<std::mutex> lock(dataMutex);
+					auto it = std::find_if(monitoringData.begin(), monitoringData.end(),
+					[&](const auto& d)
+					{
+						return d.getPids() == data.getPids();
+					});
+
+					if (it != monitoringData.end())
+					{
+						it->updateGPUEnergy(gpuJoules);
+					}
+				}
+			}
+
+			screen.Post(Event::Custom);
+			std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+		}
+	});
+
+	std::thread sdThread([&screen]
+	{
+		PDH_HQUERY query;
+		if (PdhOpenQuery(NULL, 0, &query) != ERROR_SUCCESS)
+		{
+			std::cerr << "Failed to open PDH query." << std::endl;
+			return;
+		}
+
+		std::map<std::wstring, std::pair<PDH_HCOUNTER, PDH_HCOUNTER>> processCounters;
+
+		std::vector<MonitoringData> localMonitoringData;
+		while (true)
+		{
+
+			// check if new_data is false and localMonitoringData is empty
+			if (newDataSd.load(std::memory_order_release) == false && localMonitoringData.empty())
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+				continue;
+			}
+
+			if (newDataSd)
+			{
+				std::unique_lock<std::mutex> lock(dataMutex);
+				localMonitoringData = monitoringData;
+				newDataSd.store(false, std::memory_order_release);
+			}
+
+
+			for (auto& data : localMonitoringData)
+			{
+				if (!data.isSDEnabled())
+				{
+					continue;
+				}
+
+				if (data.getPids().empty())
+				{
+					continue;
+				}
+
+				std::wstring instanceName = getInstanceForPID(data.getPids()[0]);
+				if (instanceName.empty())
+				{
+					continue;
+				}
+
+				if (processCounters.find(instanceName) == processCounters.end())
+				{
+					PDH_HCOUNTER counterDiskRead, counterDiskWrite;
+					std::wstring readPath = getLocalizedCounterPath(instanceName, "IO Read Bytes/sec");
+					std::wstring writePath = getLocalizedCounterPath(instanceName, "IO Write Bytes/sec");
+
+					if (PdhAddCounter(query, readPath.c_str(), 0, &counterDiskRead) != ERROR_SUCCESS ||
+						PdhAddCounter(query, writePath.c_str(), 0, &counterDiskWrite) != ERROR_SUCCESS)
+					{
+						std::cerr << "Failed to add PDH counters for: " << data.getName() << std::endl;
+						continue;
+					}
+
+					processCounters[instanceName] = { counterDiskRead, counterDiskWrite };
+				}
+
+				if (PdhCollectQueryData(query) != ERROR_SUCCESS)
+				{
+					std::cerr << "Failed to collect PDH query data." << std::endl;
+					continue;
+				}
+
+				for (auto& [instanceName, counters] : processCounters)
+				{
+					PDH_FMT_COUNTERVALUE diskReadValue, diskWriteValue;
+					long readRate = 0, writeRate = 0;
+
+					if (PdhGetFormattedCounterValue(counters.first, PDH_FMT_LONG, NULL, &diskReadValue) == ERROR_SUCCESS)
+					{
+						readRate = diskReadValue.longValue;
+					}
+
+					if (PdhGetFormattedCounterValue(counters.second, PDH_FMT_LONG, NULL, &diskWriteValue) == ERROR_SUCCESS)
+					{
+						writeRate = diskWriteValue.longValue;
+					}
+
+					double readPower = 2.2 * readRate / 5600000000;
+					double writePower = 2.2 * writeRate / 5300000000;
+					double averagePower = readPower + writePower;
+
+					double intervalEnergy = averagePower * interval / 1000;
+
+					{
+						std::lock_guard<std::mutex> lock(dataMutex);
+						auto it = std::find_if(monitoringData.begin(), monitoringData.end(), [&](const auto& d)
+						{
+							return !d.getPids().empty();
+						});
+
+						if (it != monitoringData.end())
+						{
+							it->updateSDEnergy(intervalEnergy);
+						}
+					}
+				}
+			}
+
+			screen.Post(Event::Custom);
+			std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+		}
+
+		PdhCloseQuery(query);
+	});
+
+	std::thread nicThread([&screen]
+	{
+		std::vector<MonitoringData> localMonitoringData;
+		while (true)
+		{
+			// check if new_data is false and localMonitoringData is empty
+			if (newDataNic.load(std::memory_order_release) == false && localMonitoringData.empty())
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+				continue;
+			}
+
+			if (newDataNic)
+			{
+				std::unique_lock<std::mutex> lock(dataMutex);
+				localMonitoringData = monitoringData;
+				newDataNic.store(false, std::memory_order_release);
+			}
+
+			PMIB_TCPTABLE_OWNER_PID tcpTable = nullptr;
+			ULONG ulSize = 0;
+
+			// Get the size of the table
+			if (GetExtendedTcpTable(nullptr, &ulSize, TRUE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0) != ERROR_INSUFFICIENT_BUFFER) {
+				continue;
+			}
+
+			std::unique_ptr<BYTE[]> buffer(new BYTE[ulSize]);
+			tcpTable = reinterpret_cast<PMIB_TCPTABLE_OWNER_PID>(buffer.get());
+
+			// Get the table data
+			if (GetExtendedTcpTable(tcpTable, &ulSize, TRUE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0) != NO_ERROR) {
+				continue;
+			}
+
+			for (auto& data : localMonitoringData)
+			{
+				if (!data.isNICEnabled())
+				{
+					continue;
+				}
+
+				for (DWORD i = 0; i < tcpTable->dwNumEntries; i++)
+				{
+					// Loop inside the pid list of data
+					for (int& pid : data.getPids())
+					{
+						if (tcpTable->table[i].dwOwningPid == pid)
+						{
+							MIB_TCPROW_OWNER_PID row = tcpTable->table[i];
+
+							// Enable ESTATS for this connection
+							TCP_ESTATS_DATA_RW_v0 rwData = { 0 };
+							rwData.EnableCollection = TRUE;
+
+							if (SetPerTcpConnectionEStats(reinterpret_cast<PMIB_TCPROW>(&row), TcpConnectionEstatsData,
+								reinterpret_cast<PUCHAR>(&rwData), 0, sizeof(rwData), 0) != NO_ERROR)
+							{
+								continue;
+							}
+
+							if (row.dwState == MIB_TCP_STATE_ESTAB && row.dwRemoteAddr != htonl(INADDR_LOOPBACK))
+							{
+								ULONG rodSize = sizeof(TCP_ESTATS_DATA_ROD_v0);
+								std::vector<BYTE> rodBuffer(rodSize);
+								PTCP_ESTATS_DATA_ROD_v0 dataRod = reinterpret_cast<PTCP_ESTATS_DATA_ROD_v0>(rodBuffer.data());
+
+								// Get the ESTATS data for this connection
+								if (GetPerTcpConnectionEStats(reinterpret_cast<PMIB_TCPROW>(&row), TcpConnectionEstatsData,
+									nullptr, 0, 0, nullptr, 0, 0,
+									reinterpret_cast<PUCHAR>(dataRod), 0, rodSize) == NO_ERROR)
+								{
+
+									// Calculate Bytes In and Bytes Out
+									double bytesIn = static_cast<double>(dataRod->DataBytesIn);
+									double bytesOut = static_cast<double>(dataRod->DataBytesOut);
+
+									double intervalSec = interval / 1000.0; // Interval in seconds (will be changï¿½ in the future)
+
+									long downloadRate = bytesIn / intervalSec;
+									long uploadRate = bytesOut / intervalSec;
+
+									double downloadPower = 1.138 * ((double)downloadRate / 300000); // 1.138 is the power consumption per byte for download (will be changï¿½ in the future using the config)
+									double uploadPower = 1.138 * ((double)uploadRate / 300000); // 1.138 is the power consumption per byte for upload (will be changï¿½ in the future using the config)
+
+									double averagePower = downloadPower + uploadPower;
+
+									{
+										std::lock_guard<std::mutex> lock(dataMutex);
+										// Update the NIC energy for the process
+										auto it = std::find_if(monitoringData.begin(), monitoringData.end(), [&](const MonitoringData& d)
+										{
+											return !d.getPids().empty();
+										});
+
+										if (it != monitoringData.end())
+										{
+											it->updateNICEnergy(averagePower);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			screen.Post(Event::Custom);
+			std::this_thread::sleep_for(std::chrono::milliseconds(interval)); // interval based on user input (will be changï¿½ in the future)
+		}
+	});
+
+	std::thread cpuThread([&screen]
+	{
+		std::vector<MonitoringData> localMonitoringData;
+		while (true)
+		{
+			double totalEnergy = 0.0;
+			double startTotalPower = 0.0;
+			double endTotalPower = 0.0;
+			double avgPowerInterval = 0.0;
+
+			// check if new_data is false and localMonitoringData is empty
+			if (newDataCpu.load(std::memory_order_release) == false && localMonitoringData.empty())
+			{
+				std::cout << "No new data" << std::endl;
+				std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+				continue;
+			}
+
+			if (newDataCpu)
+			{
+				std::unique_lock<std::mutex> lock(dataMutex);
+				localMonitoringData = monitoringData;
+				newDataCpu.store(false, std::memory_order_release);
+			}
+
+			// Process each monitoring data entry
+			for (auto& data : localMonitoringData)
+			{
+				if (!data.isCPUEnabled())
+				{
+					continue;
+				}
+
+				// Ensure the PID list is not empty
+				if (data.getPids().empty())
+				{
+					std::cerr << "Error: No PIDs available for monitoring data." << std::endl;
+					continue;
+				}
+
+				// Get initial CPU and process times
+				uint64_t startCPUTime = CPU::getCPUTime();
+				uint64_t startPidTime = CPU::getPidTime(data.getPids()[0]);
+
+				CPU::getCurrentPower(startTotalPower);
+
+				// Monitor for the specified interval
+				std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+
+				CPU::getCurrentPower(endTotalPower);
+
+				avgPowerInterval = (startTotalPower + endTotalPower) / 2;
+
+				uint64_t endCPUTime = CPU::getCPUTime();
+				uint64_t endPidTime = CPU::getPidTime(data.getPids()[0]);
+
+				// Calculate time differences
+				double pidTimeDiff = static_cast<double>(endPidTime) - static_cast<double>(startPidTime);
+				double cpuTimeDiff = static_cast<double>(endCPUTime) - static_cast<double>(startCPUTime);
+
+				// Validate time differences
+				if (pidTimeDiff > cpuTimeDiff)
+				{
+					std::cerr << "Error: Process time is greater than CPU time." << std::endl;
+					continue;
+				}
+
+				// Calculate CPU usage and energy consumption
+				double cpuUsage = (pidTimeDiff / cpuTimeDiff);
+				double intervalEnergy = avgPowerInterval * cpuUsage * interval / 1000;
+
+				totalEnergy += intervalEnergy;
+
+				// Update monitoring data safely
+				{
+					std::lock_guard<std::mutex> lock(dataMutex);
+					auto it = std::find_if(monitoringData.begin(), monitoringData.end(),
+						[&](const auto& d)
+					{
+						return d.getPids() == data.getPids();
+					});
+
+					if (it != monitoringData.end())
+					{
+						it->updateCPUEnergy(totalEnergy);
+					}
+				}
+			}
+
+			// Notify the screen of an update
+			screen.Post(Event::Custom);
+		}
+	});
+
+
+	// Run the application
+	screen.Loop(component);
+
+	gpuThread.join();
+	sdThread.join();
+	nicThread.join();
+	cpuThread.join();
+	return 0;
+}
+
 DWORD getCounterIndex(const std::string& counterName)
 {
 	HKEY hKey;
@@ -174,10 +777,27 @@ DWORD getCounterIndex(const std::string& counterName)
 	return -1;  // Counter name not found
 }
 
-/*
-* This function gets the instance name for a given process ID.
-*/
-std::wstring GetInstanceForPID(int targetPID)
+wstring getProcessNameByPID(DWORD processID)
+{
+	TCHAR processName[MAX_PATH] = TEXT("<unknown>");
+
+	// Get a handle to the process
+	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, processID);
+
+	// Check if we successfully got a handle to the process
+	if (hProcess) {
+		// Get the process name
+		if (GetModuleBaseName(hProcess, nullptr, processName, sizeof(processName) / sizeof(TCHAR))) {
+			CloseHandle(hProcess); // Close handle when done
+			return processName;
+		}
+		CloseHandle(hProcess); // Close handle even if we fail
+	}
+
+	return L"<unknown>";
+}
+
+std::wstring getInstanceForPID(int targetPID)
 {
 	PDH_HQUERY query = nullptr;
 	PDH_HCOUNTER pidCounter = nullptr;
@@ -240,10 +860,130 @@ std::wstring GetInstanceForPID(int targetPID)
 	return matchedInstance;
 }
 
-/*
-* This function get the localized counter path for a given process name and counter name to be used in PDH functions
-* and avoid hardcoding the counter path for each language.
-*/
+void readCommand(std::string commandHandle)
+{
+	std::istringstream tokenStream(commandHandle);
+
+	std::vector<string> chain;
+
+	while (getline(tokenStream, commandHandle, ' '))
+	{
+		chain.push_back(commandHandle);
+	}
+
+	switch (actions[chain[0]])
+	{
+	case 1:
+		if (chain.size() == 3)
+		{
+			enable(chain[1], chain[2]);
+		}
+		else
+		{
+			std::cout << "error, need 2 in total for enable and disable" << std::endl;
+		}
+		break;
+
+	case 2:
+		if (chain.size() == 3)
+		{
+			disable(chain[1], chain[2]);
+		}
+		else
+		{
+			std::cout << "error, need 2 in total for enable and disable" << std::endl;
+		}
+		break;
+
+	case 3:
+		if (chain.size() == 4)
+		{
+			if (chain[1] == "-p")
+			{
+				if (all_of(chain[2].begin(), chain[2].end(), std::isdigit))
+				{
+					if (chain[3] == "CPU" || chain[3] == "GPU" || chain[3] == "SD" || chain[3] == "NIC")
+					{
+						addProcPid(chain[2], chain[3]);
+					}
+					else
+					{
+						std::cout << "error fourth argument (must be CPU, GPU, SD or NIC)" << std::endl;
+					}
+				}
+				else
+				{
+					std::cout << "error third argument (must be an integer)" << std::endl;
+				}
+			}
+			else if (chain[1] == "-n")
+			{
+				if (chain[3] == "CPU" || chain[3] == "GPU" || chain[3] == "SD" || chain[3] == "NIC")
+				{
+					addProcName(chain[2], chain[3]);
+				}
+				else
+				{
+					std::cout << "error fourth argument (must be CPU, GPU, SD or NIC)" << std::endl;
+				}
+			}
+			else
+			{
+				std::cout << "error second argument (-p for pid / -n for name)" << std::endl;
+			}
+		}
+		else
+		{
+			std::cout << "error, need 4 in total for add and remove" << std::endl;
+		}
+		break;
+
+	case 4:
+		if (chain.size() == 2)
+		{
+			if (all_of(chain[1].begin(), chain[1].end(), std::isdigit))
+			{
+				removeProcByLineNumber(chain[1]);
+			}
+			else
+			{
+				std::cout << "error third argument (must be an integer)" << std::endl;
+			}
+		}
+		else
+		{
+			std::cout << "error, need 4 in total for add and remove" << std::endl;
+		}
+		break;
+
+	case 5:
+		if (chain.size() == 2)
+		{
+			if (all_of(chain[1].begin(), chain[1].end(), std::isdigit))
+			{
+				interval = stoi(chain[1]);
+				std::cout << "Interval has been changed" << std::endl;
+			}
+			else
+			{
+				std::cout << "error second argument (must be an integer)" << std::endl;
+			}
+		}
+		else
+		{
+			std::cout << "error, need 2 in total for interval" << std::endl;
+		}
+		break;
+
+	case 6:
+		break;
+
+	default:
+		std::cout << "error first argument (list command: add/remove/enable/disable/interval/start/quit)" << std::endl;
+		break;
+	}
+}
+
 std::wstring getLocalizedCounterPath(const std::wstring& processName, const std::string& counterName)
 {
 	wchar_t localizedName[PDH_MAX_COUNTER_PATH];
@@ -269,626 +1009,11 @@ std::wstring getLocalizedCounterPath(const std::wstring& processName, const std:
 	return L"\\" + localizedProcessNameW + L"(" + processName + L")\\" + localizedNameW;
 }
 
-auto CreateTableRows() -> std::vector<std::vector<std::string>>
-{
-	std::vector<std::vector<std::string>> rows;
-	std::lock_guard<std::mutex> lock(data_mutex);
-
-	rows.emplace_back(std::vector<std::string>{"Application Name", "CPU", "GPU", "SD", "NIC"});
-	for (const auto& data : monitoringData)
-	{
-		rows.emplace_back(std::vector<std::string>
-		{
-			data.getName(),
-				std::to_string(data.cpuEnergy),
-				std::to_string(data.gpuEnergy),
-				std::to_string(data.sdEnergy),
-				std::to_string(data.nicEnergy)
-		});
-	}
-
-	return rows;
-}
-
-auto RenderTable(int scroll_position) -> Element
-{
-	auto table_data = CreateTableRows();
-	int terminal_height = Utils::GetTerminalHeight();
-	int visible_rows = terminal_height - 8; // Adjust for input box and borders
-
-	// Prepare rows for the visible portion
-	std::vector<std::vector<std::string>> visible_table_data;
-	visible_table_data.push_back(table_data[0]); // Header row
-	for (int i = scroll_position + 1; i < std::min(scroll_position + visible_rows + 1, (int)table_data.size()); ++i)
-	{
-		visible_table_data.push_back(table_data[i]);
-	}
-
-	auto table = Table(visible_table_data);
-
-	// Style the table
-	table.SelectAll().Border(LIGHT);
-	table.SelectRow(0).Decorate(bold);
-	table.SelectRow(0).DecorateCells(center);
-	table.SelectRow(0).SeparatorVertical(LIGHT);
-	table.SelectRow(0).Border();
-	table.SelectColumn(0).Decorate(flex);
-	table.SelectColumns(0, -1).SeparatorVertical(LIGHT);
-	auto content = table.SelectRows(1, -1);
-	content.DecorateCellsAlternateRow(color(Color::Red), 3, 0);
-	content.DecorateCellsAlternateRow(color(Color::RedLight), 3, 1);
-	content.DecorateCellsAlternateRow(color(Color::White), 3, 2);
-
-	return table.Render() | flex;
-}
-
-int main()
-{
-	std::string input;
-	Component input_box = Input(&input, "Type here");
-	input_box |= CatchEvent([&](Event event)
-		{
-			if (event == Event::Return)
-			{
-				if (!input.empty())
-				{
-					readCommand(input);
-					input.clear();
-				}
-				return true;
-			}
-			return false;
-		});
-
-	auto screen = ScreenInteractive::Fullscreen();
-
-	// State variables for scrolling
-	int scroll_position = 0;
-
-	// Component to handle input and update the scroll position
-	auto component = Renderer(input_box, [&]
-		{
-			return vbox(
-				{
-					RenderTable(scroll_position),
-					separator(),
-					hbox(
-					{
-						text("Command: "), input_box->Render()
-					}),
-				}) | border;
-		});
-
-	component = CatchEvent(component, [&](Event event) {
-		int terminal_height = Utils::GetTerminalHeight();
-		int visible_rows = terminal_height - 8;
-
-		if ((int)monitoringData.size() <= visible_rows)
-		{
-			scroll_position = 0; // Disable scrolling if all rows fit
-			return false;
-		}
-
-		// Handle mouse wheel and arrow key events
-		if (event.is_mouse())
-		{
-			if (event.mouse().button == Mouse::WheelDown)
-			{
-				scroll_position = std::min(scroll_position + 1, (int)monitoringData.size() - visible_rows - 1);
-				return true;
-			}
-			if (event.mouse().button == Mouse::WheelUp)
-			{
-				scroll_position = std::max(scroll_position - 1, 0);
-				return true;
-			}
-		}
-
-		if (event == Event::ArrowDown)
-		{
-			scroll_position = std::min(scroll_position + 1, (int)monitoringData.size() - visible_rows - 1);
-			return true;
-		}
-		if (event == Event::ArrowUp)
-		{
-			scroll_position = std::max(scroll_position - 1, 0);
-			return true;
-		}
-
-		return false;
-		});
-
-	std::thread gpu_thread([&screen]
-		{
-			std::vector<MonitoringData> localMonitoringData;
-			while (true)
-			{
-				// check if new_data is false and localMonitoringData is empty
-				if (new_data_gpu.load(std::memory_order_release) == false && localMonitoringData.empty())
-				{
-					std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-					continue;
-				}
-
-				if (new_data_gpu)
-				{
-					std::unique_lock<std::mutex> lock(data_mutex);
-					localMonitoringData = monitoringData;
-					new_data_gpu.store(false, std::memory_order_release);
-				}
-
-				for (auto& data : localMonitoringData)
-				{
-					if (!data.isGPUEnabled() || data.getPids().empty())
-					{
-						continue;
-					}
-
-					int gpu_joules = GPU::getGPUJoules(data.getPids(), interval);
-					{
-						std::lock_guard<std::mutex> lock(data_mutex);
-						auto it = std::find_if(monitoringData.begin(), monitoringData.end(),
-							[&](const auto& d) { return d.getPids() == data.getPids(); });
-
-						if (it != monitoringData.end())
-						{
-							it->updateGPUEnergy(gpu_joules);
-						}
-					}
-				}
-
-				screen.Post(Event::Custom);
-				std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-			}
-		});
-
-	std::thread sd_thread([&screen]
-		{
-			PDH_HQUERY query;
-			if (PdhOpenQuery(NULL, 0, &query) != ERROR_SUCCESS)
-			{
-				std::cerr << "Failed to open PDH query." << std::endl;
-				return;
-			}
-
-			std::map<std::wstring, std::pair<PDH_HCOUNTER, PDH_HCOUNTER>> process_counters;
-
-			std::vector<MonitoringData> localMonitoringData;
-			while (true)
-			{
-
-				// check if new_data is false and localMonitoringData is empty
-				if (new_data_sd.load(std::memory_order_release) == false && localMonitoringData.empty())
-				{
-					std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-					continue;
-				}
-
-				if (new_data_sd)
-				{
-					std::unique_lock<std::mutex> lock(data_mutex);
-					localMonitoringData = monitoringData;
-					new_data_sd.store(false, std::memory_order_release);
-				}
-
-
-				for (auto& data : localMonitoringData)
-				{
-					if (!data.isSDEnabled())
-					{
-						continue;
-					}
-
-					if (data.getPids().empty())
-					{
-						continue;
-					}
-
-					std::wstring instanceName = GetInstanceForPID(data.getPids()[0]);
-					if (instanceName.empty())
-					{
-						continue;
-					}
-					if (process_counters.find(instanceName) == process_counters.end())
-					{
-						PDH_HCOUNTER counterDiskRead, counterDiskWrite;
-						std::wstring readPath = getLocalizedCounterPath(instanceName, "IO Read Bytes/sec");
-						std::wstring writePath = getLocalizedCounterPath(instanceName, "IO Write Bytes/sec");
-
-						if (PdhAddCounter(query, readPath.c_str(), 0, &counterDiskRead) != ERROR_SUCCESS ||
-							PdhAddCounter(query, writePath.c_str(), 0, &counterDiskWrite) != ERROR_SUCCESS)
-						{
-							std::cerr << "Failed to add PDH counters for: " << data.getName() << std::endl;
-							continue;
-						}
-
-						process_counters[instanceName] = { counterDiskRead, counterDiskWrite };
-					}
-
-					if (PdhCollectQueryData(query) != ERROR_SUCCESS)
-					{
-						std::cerr << "Failed to collect PDH query data." << std::endl;
-						continue;
-					}
-
-					for (auto& [instanceName, counters] : process_counters)
-					{
-						PDH_FMT_COUNTERVALUE diskReadValue, diskWriteValue;
-						long readRate = 0, writeRate = 0;
-
-						if (PdhGetFormattedCounterValue(counters.first, PDH_FMT_LONG, NULL, &diskReadValue) == ERROR_SUCCESS)
-						{
-							readRate = diskReadValue.longValue;
-						}
-						if (PdhGetFormattedCounterValue(counters.second, PDH_FMT_LONG, NULL, &diskWriteValue) == ERROR_SUCCESS)
-						{
-							writeRate = diskWriteValue.longValue;
-						}
-
-						double readPower = 2.2 * readRate / 5600000000;
-						double writePower = 2.2 * writeRate / 5300000000;
-						double averagePower = readPower + writePower;
-
-						double intervalEnergy = averagePower * interval / 1000;
-
-						{
-							std::lock_guard<std::mutex> lock(data_mutex);
-							auto it = std::find_if(monitoringData.begin(), monitoringData.end(), [&](const auto& d)
-								{
-									return !d.getPids().empty();
-								});
-							if (it != monitoringData.end())
-							{
-								it->updateSDEnergy(intervalEnergy);
-							}
-						}
-					}
-				}
-
-				screen.Post(Event::Custom);
-				std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-			}
-
-			PdhCloseQuery(query);
-		});
-
-	std::thread nic_thread([&screen]
-		{
-			std::vector<MonitoringData> localMonitoringData;
-			while (true)
-			{
-				// check if new_data is false and localMonitoringData is empty
-				if (new_data_nic.load(std::memory_order_release) == false && localMonitoringData.empty())
-				{
-					std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-					continue;
-				}
-
-				if (new_data_nic)
-				{
-					std::unique_lock<std::mutex> lock(data_mutex);
-					localMonitoringData = monitoringData;
-					new_data_nic.store(false, std::memory_order_release);
-				}
-
-				PMIB_TCPTABLE_OWNER_PID tcpTable = nullptr;
-				ULONG ulSize = 0;
-
-				// Get the size of the table
-				if (GetExtendedTcpTable(nullptr, &ulSize, TRUE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0) != ERROR_INSUFFICIENT_BUFFER) {
-					continue;
-				}
-
-				std::unique_ptr<BYTE[]> buffer(new BYTE[ulSize]);
-				tcpTable = reinterpret_cast<PMIB_TCPTABLE_OWNER_PID>(buffer.get());
-
-				// Get the table data
-				if (GetExtendedTcpTable(tcpTable, &ulSize, TRUE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0) != NO_ERROR) {
-					continue;
-				}
-
-				for (auto& data : localMonitoringData) {
-
-					if (!data.isNICEnabled()) {
-						continue;
-					}
-
-
-					for (DWORD i = 0; i < tcpTable->dwNumEntries; i++) {
-						// Loop inside the pid list of data
-						for (int& pid : data.getPids())
-						{
-							if (tcpTable->table[i].dwOwningPid == pid)
-							{
-								MIB_TCPROW_OWNER_PID row = tcpTable->table[i];
-
-								// Enable ESTATS for this connection
-								TCP_ESTATS_DATA_RW_v0 rwData = { 0 };
-								rwData.EnableCollection = TRUE;
-
-								if (SetPerTcpConnectionEStats(reinterpret_cast<PMIB_TCPROW>(&row), TcpConnectionEstatsData,
-									reinterpret_cast<PUCHAR>(&rwData), 0, sizeof(rwData), 0) != NO_ERROR) {
-									continue;
-								}
-
-								if (row.dwState == MIB_TCP_STATE_ESTAB && row.dwRemoteAddr != htonl(INADDR_LOOPBACK)) {
-									ULONG rodSize = sizeof(TCP_ESTATS_DATA_ROD_v0);
-									std::vector<BYTE> rodBuffer(rodSize);
-									PTCP_ESTATS_DATA_ROD_v0 dataRod = reinterpret_cast<PTCP_ESTATS_DATA_ROD_v0>(rodBuffer.data());
-
-									// Get the ESTATS data for this connection
-									if (GetPerTcpConnectionEStats(reinterpret_cast<PMIB_TCPROW>(&row), TcpConnectionEstatsData,
-										nullptr, 0, 0, nullptr, 0, 0,
-										reinterpret_cast<PUCHAR>(dataRod), 0, rodSize) == NO_ERROR) {
-
-										// Calculate Bytes In and Bytes Out
-										double bytesIn = static_cast<double>(dataRod->DataBytesIn);
-										double bytesOut = static_cast<double>(dataRod->DataBytesOut);
-
-										double intervalSec = interval / 1000.0; // Interval in seconds (will be changé in the future)
-
-										long downloadRate = bytesIn / intervalSec;
-										long uploadRate = bytesOut / intervalSec;
-
-										double downloadPower = 1.138 * ((double)downloadRate / 300000); // 1.138 is the power consumption per byte for download (will be changé in the future using the config)
-										double uploadPower = 1.138 * ((double)uploadRate / 300000); // 1.138 is the power consumption per byte for upload (will be changé in the future using the config)
-
-										double averagePower = downloadPower + uploadPower;
-
-										{
-											std::lock_guard<std::mutex> lock(data_mutex);
-											// Update the NIC energy for the process
-											auto it = std::find_if(monitoringData.begin(), monitoringData.end(), [&](const MonitoringData& d)
-												{
-													return !d.getPids().empty();
-												});
-											if (it != monitoringData.end())
-											{
-												it->updateNICEnergy(averagePower);
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-
-				screen.Post(Event::Custom);
-				std::this_thread::sleep_for(std::chrono::milliseconds(interval)); // interval based on user input (will be changé in the future)
-			}
-		});
-
-	std::thread cpu_thread([&screen]
-		{
-			std::vector<MonitoringData> localMonitoringData;
-			while (true)
-			{
-				double totalEnergy = 0.0;
-				double startTotalPower = 0.0;
-				double endTotalPower = 0.0;
-				double avgPowerInterval = 0.0;
-
-				// check if new_data is false and localMonitoringData is empty
-				if (new_data_cpu.load(std::memory_order_release) == false && localMonitoringData.empty())
-				{
-					std::cout << "No new data" << std::endl;
-					std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-					continue;
-				}
-
-				if (new_data_cpu)
-				{
-					std::unique_lock<std::mutex> lock(data_mutex);
-					localMonitoringData = monitoringData;
-					new_data_cpu.store(false, std::memory_order_release);
-				}
-
-				// Process each monitoring data entry
-				for (auto& data : localMonitoringData)
-				{
-					if (!data.isCPUEnabled())
-					{
-						continue;
-					}
-
-					// Ensure the PID list is not empty
-					if (data.getPids().empty())
-					{
-						std::cerr << "Error: No PIDs available for monitoring data." << std::endl;
-						continue;
-					}
-
-					// Get initial CPU and process times
-					uint64_t startCPUTime = CPU::getCPUTime();
-					uint64_t startPidTime = CPU::getPidTime(data.getPids()[0]);
-
-					CPU::getCurrentPower(startTotalPower);
-
-					// Monitor for the specified interval
-					std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-
-					CPU::getCurrentPower(endTotalPower);
-
-					avgPowerInterval = (startTotalPower + endTotalPower) / 2;
-
-					uint64_t endCPUTime = CPU::getCPUTime();
-					uint64_t endPidTime = CPU::getPidTime(data.getPids()[0]);
-
-					// Calculate time differences
-					double pidTimeDiff = static_cast<double>(endPidTime) - static_cast<double>(startPidTime);
-					double cpuTimeDiff = static_cast<double>(endCPUTime) - static_cast<double>(startCPUTime);
-
-					// Validate time differences
-					if (pidTimeDiff > cpuTimeDiff)
-					{
-						std::cerr << "Error: Process time is greater than CPU time." << std::endl;
-						continue;
-					}
-
-					// Calculate CPU usage and energy consumption
-					double cpuUsage = (pidTimeDiff / cpuTimeDiff);
-					double intervalEnergy = avgPowerInterval * cpuUsage * interval / 1000;
-
-					totalEnergy += intervalEnergy;
-
-					// Update monitoring data safely
-					{
-						std::lock_guard<std::mutex> lock(data_mutex);
-						auto it = std::find_if(monitoringData.begin(), monitoringData.end(),
-							[&](const auto& d) { return d.getPids() == data.getPids(); });
-
-						if (it != monitoringData.end()) {
-							it->updateCPUEnergy(totalEnergy);
-						}
-					}
-				}
-
-				// Notify the screen of an update
-				screen.Post(Event::Custom);
-			}
-		});
-
-
-	// Run the application
-	screen.Loop(component);
-
-	gpu_thread.join();
-	sd_thread.join();
-	nic_thread.join();
-	cpu_thread.join();
-	return 0;
-}
-
-void readCommand(string commandHandle)
-{
-	istringstream tokenStream(commandHandle);
-
-	vector<string> chain;
-
-	while (getline(tokenStream, commandHandle, ' '))
-	{
-		chain.push_back(commandHandle);
-	}
-
-	switch (actions[chain[0]])
-	{
-	case 1:
-		if (chain.size() == 3)
-		{
-			enable(chain[1], chain[2]);
-		}
-		else
-		{
-			cout << "error, need 2 in total for enable and disable" << endl;
-		}
-		break;
-
-	case 2:
-		if (chain.size() == 3)
-		{
-			disable(chain[1], chain[2]);
-		}
-		else
-		{
-			cout << "error, need 2 in total for enable and disable" << endl;
-		}
-		break;
-
-	case 3:
-		if (chain.size() == 4)
-		{
-			if (chain[1] == "-p")
-			{
-				if (all_of(chain[2].begin(), chain[2].end(), ::isdigit))
-				{
-					if (chain[3] == "CPU" || chain[3] == "GPU" || chain[3] == "SD" || chain[3] == "NIC")
-					{
-						addProcPid(chain[2], chain[3]);
-					}
-					else
-					{
-						cout << "error fourth argument (must be CPU, GPU, SD or NIC)" << endl;
-					}
-				}
-				else
-				{
-					cout << "error third argument (must be an integer)" << endl;
-				}
-			}
-			else if (chain[1] == "-n")
-			{
-				if (chain[3] == "CPU" || chain[3] == "GPU" || chain[3] == "SD" || chain[3] == "NIC")
-				{
-					addProcName(chain[2], chain[3]);
-				}
-				else
-				{
-					cout << "error fourth argument (must be CPU, GPU, SD or NIC)" << endl;
-				}
-			}
-			else
-			{
-				cout << "error second argument (-p for pid / -n for name)" << endl;
-			}
-		}
-		else
-		{
-			cout << "error, need 4 in total for add and remove" << endl;
-		}
-		break;
-
-	case 4:
-		if (chain.size() == 2)
-		{
-			if (all_of(chain[1].begin(), chain[1].end(), ::isdigit))
-			{
-				removeProcByLineNumber(chain[1]);
-			}
-			else
-			{
-				cout << "error third argument (must be an integer)" << endl;
-			}
-		}
-		else
-		{
-			cout << "error, need 4 in total for add and remove" << endl;
-		}
-		break;
-
-	case 5:
-		if (chain.size() == 2)
-		{
-			if (all_of(chain[1].begin(), chain[1].end(), ::isdigit))
-			{
-				interval = stoi(chain[1]);
-				cout << "Interval has been changed" << endl;
-			}
-			else
-			{
-				cout << "error second argument (must be an integer)" << endl;
-			}
-		}
-		else
-		{
-			cout << "error, need 2 in total for interval" << endl;
-		}
-		break;
-
-	case 6:
-		break;
-
-	default:
-		cout << "error first argument (list command: add/remove/enable/disable/interval/start/quit)" << endl;
-		break;
-	}
-}
-
 void addProcPid(const std::string& pid, const std::string& component)
 {
-	enum ComponentType { CPU, GPU, SD, NIC };
-
-	std::unordered_map<std::string, ComponentType> componentMap = {
+	//can be global
+	std::unordered_map<std::string, ComponentType> componentMap =
+	{
 		{ "CPU", ComponentType::CPU },
 		{ "GPU", ComponentType::GPU },
 		{ "SD", ComponentType::SD },
@@ -898,25 +1023,28 @@ void addProcPid(const std::string& pid, const std::string& component)
 	try
 	{
 		int processId = std::stoi(pid); // Convert PID to integer
-		std::wstring processName = GetProcessNameByPID(processId);
+		std::wstring processName = getProcessNameByPID(processId);
 
 		// Check if the process name is valid
-		if (processName.empty()) {
+		if (processName.empty())
+		{
 			std::cerr << "Error: Invalid PID or process not found." << std::endl;
 			return;
 		}
 
 		{
-			std::unique_lock<std::mutex> lock(data_mutex);
+			std::unique_lock<std::mutex> lock(dataMutex);
 
 			// Check for duplicate before adding
 			auto it = std::find_if(monitoringData.begin(), monitoringData.end(),
-				[processId](const MonitoringData& data) {
-					return std::find(data.getPids().begin(), data.getPids().end(), processId) != data.getPids().end();
-				});
+				[processId](const MonitoringData& data)
+			{
+				return std::find(data.getPids().begin(), data.getPids().end(), processId) != data.getPids().end();
+			});
 
-			if (it == monitoringData.end()) {
-				MonitoringData data(Utils::wstringToString(processName), { processId });
+			if (it == monitoringData.end())
+			{
+				MonitoringData data(wstringToString(processName), { processId });
 				data.enableComponent(component);
 				monitoringData.push_back(data);
 				auto it2 = componentMap.find(component);
@@ -928,20 +1056,21 @@ void addProcPid(const std::string& pid, const std::string& component)
 				switch (it2->second)
 				{
 				case CPU:
-					new_data_cpu.store(true, std::memory_order_release);
+					newDataCpu.store(true, std::memory_order_release);
 					break;
 				case GPU:
-					new_data_gpu.store(true, std::memory_order_release);
+					newDataGpu.store(true, std::memory_order_release);
 					break;
 				case SD:
-					new_data_sd.store(true, std::memory_order_release);
+					newDataSd.store(true, std::memory_order_release);
 					break;
 				case NIC:
-					new_data_nic.store(true, std::memory_order_release);
+					newDataNic.store(true, std::memory_order_release);
 					break;
 				}
 			}
-			else {
+			else
+			{
 				std::cerr << "Warning: Process with PID " << pid << " is already being monitored." << std::endl;
 			}
 		}
@@ -955,9 +1084,8 @@ void addProcPid(const std::string& pid, const std::string& component)
 
 void addProcName(const std::string& name, const std::string& component)
 {
-	enum ComponentType { CPU, GPU, SD, NIC };
-
-	std::unordered_map<std::string, ComponentType> componentMap = {
+	std::unordered_map<std::string, ComponentType> componentMap =
+	{
 		{ "CPU", ComponentType::CPU },
 		{ "GPU", ComponentType::GPU },
 		{ "SD", ComponentType::SD },
@@ -966,7 +1094,8 @@ void addProcName(const std::string& name, const std::string& component)
 
 	HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
-	if (hSnapshot == INVALID_HANDLE_VALUE) {
+	if (hSnapshot == INVALID_HANDLE_VALUE)
+	{
 		std::cerr << "Error: Unable to create process snapshot." << std::endl;
 		return;
 	}
@@ -987,9 +1116,10 @@ void addProcName(const std::string& name, const std::string& component)
 
 				// Check for duplicates in `comp[component].first`
 				auto it = std::find_if(comp[component].first.begin(), comp[component].first.end(),
-					[&processId](const process& o) {
-						return o.getPid() == std::to_string(processId);
-					});
+					[&processId](const process& o)
+				{
+					return o.getPid() == std::to_string(processId);
+				});
 
 				if (it == comp[component].first.end())
 				{
@@ -1006,7 +1136,7 @@ void addProcName(const std::string& name, const std::string& component)
 	if (!pids.empty())
 	{
 		{
-			std::unique_lock<std::mutex> lock(data_mutex);
+			std::unique_lock<std::mutex> lock(dataMutex);
 			MonitoringData data(name, pids);
 			data.enableComponent(component);
 			monitoringData.push_back(data);
@@ -1019,16 +1149,16 @@ void addProcName(const std::string& name, const std::string& component)
 			switch (it2->second)
 			{
 			case CPU:
-				new_data_cpu.store(true, std::memory_order_release);
+				newDataCpu.store(true, std::memory_order_release);
 				break;
 			case GPU:
-				new_data_gpu.store(true, std::memory_order_release);
+				newDataGpu.store(true, std::memory_order_release);
 				break;
 			case SD:
-				new_data_sd.store(true, std::memory_order_release);
+				newDataSd.store(true, std::memory_order_release);
 				break;
 			case NIC:
-				new_data_nic.store(true, std::memory_order_release);
+				newDataNic.store(true, std::memory_order_release);
 				break;
 			}
 		}
@@ -1051,7 +1181,7 @@ void removeProcByLineNumber(const std::string& lineNumber) noexcept
 			return;
 		}
 
-		std::unique_lock<std::mutex> lock(data_mutex);
+		std::unique_lock<std::mutex> lock(dataMutex);
 		if (line >= monitoringData.size())
 		{
 			std::cerr << "Error: Line number is out of range." << std::endl;
@@ -1080,9 +1210,10 @@ void removeProcByLineNumber(const std::string& lineNumber) noexcept
 			// Use erase-remove idiom with an unordered_set for O(1) lookup
 			processes.erase(
 				std::remove_if(processes.begin(), processes.end(),
-					[&pidsToRemove](const process& p) {
-						return pidsToRemove.count(std::stoi(p.getPid())) > 0;
-					}),
+					[&pidsToRemove](const process& p)
+				{
+					return pidsToRemove.count(std::stoi(p.getPid())) > 0;
+				}),
 				processes.end()
 			);
 
@@ -1100,10 +1231,10 @@ void removeProcByLineNumber(const std::string& lineNumber) noexcept
 		monitoringData.shrink_to_fit();
 
 		// Atomic updates with memory ordering
-		new_data_cpu.store(true, std::memory_order_release);
-		new_data_gpu.store(true, std::memory_order_release);
-		new_data_sd.store(true, std::memory_order_release);
-		new_data_nic.store(true, std::memory_order_release);
+		newDataCpu.store(true, std::memory_order_release);
+		newDataGpu.store(true, std::memory_order_release);
+		newDataSd.store(true, std::memory_order_release);
+		newDataNic.store(true, std::memory_order_release);
 
 		// Enhanced logging
 		std::cout << "Process has been removed from line " << line
@@ -1128,17 +1259,18 @@ void removeProcByLineNumber(const std::string& lineNumber) noexcept
 	}
 }
 
-void enable(const string& lineNumber, const string& component)
+void enable(const std::string& lineNumber, const std::string& component)
 {
-	enum ComponentType { CPU, GPU, SD, NIC };
-	std::unordered_map<std::string, ComponentType> comp = {
+	std::unordered_map<std::string, ComponentType> comp =
+	{
 		{ "CPU", ComponentType::CPU },
 		{ "GPU", ComponentType::GPU },
 		{ "SD", ComponentType::SD },
 		{ "NIC", ComponentType::NIC }
 	};
 
-	try {
+	try
+	{
 		int line = std::stoi(lineNumber);
 		if (line < 0)
 		{
@@ -1146,7 +1278,7 @@ void enable(const string& lineNumber, const string& component)
 			return;
 		}
 
-		std::unique_lock<std::mutex> lock(data_mutex);
+		std::unique_lock<std::mutex> lock(dataMutex);
 		if (line >= monitoringData.size())
 		{
 			std::cerr << "Error: Line number is out of range." << std::endl;
@@ -1165,16 +1297,16 @@ void enable(const string& lineNumber, const string& component)
 		switch (it->second)
 		{
 		case CPU:
-			new_data_cpu.store(true, std::memory_order_release);
+			newDataCpu.store(true, std::memory_order_release);
 			break;
 		case GPU:
-			new_data_gpu.store(true, std::memory_order_release);
+			newDataGpu.store(true, std::memory_order_release);
 			break;
 		case SD:
-			new_data_sd.store(true, std::memory_order_release);
+			newDataSd.store(true, std::memory_order_release);
 			break;
 		case NIC:
-			new_data_nic.store(true, std::memory_order_release);
+			newDataNic.store(true, std::memory_order_release);
 			break;
 		}
 
@@ -1195,17 +1327,18 @@ void enable(const string& lineNumber, const string& component)
 	}
 }
 
-void disable(const string& lineNumber, const string& component)
+void disable(const std::string& lineNumber, const std::string& component)
 {
-	enum ComponentType { CPU, GPU, SD, NIC };
-	std::unordered_map<std::string, ComponentType> comp = {
+	std::unordered_map<std::string, ComponentType> comp =
+	{
 		{ "CPU", ComponentType::CPU },
 		{ "GPU", ComponentType::GPU },
 		{ "SD", ComponentType::SD },
 		{ "NIC", ComponentType::NIC }
 	};
 
-	try {
+	try
+	{
 		int line = std::stoi(lineNumber);
 		if (line < 0)
 		{
@@ -1213,7 +1346,7 @@ void disable(const string& lineNumber, const string& component)
 			return;
 		}
 
-		std::unique_lock<std::mutex> lock(data_mutex);
+		std::unique_lock<std::mutex> lock(dataMutex);
 		if (line >= monitoringData.size())
 		{
 			std::cerr << "Error: Line number is out of range." << std::endl;
@@ -1232,16 +1365,16 @@ void disable(const string& lineNumber, const string& component)
 		switch (it->second)
 		{
 		case CPU:
-			new_data_cpu.store(true, std::memory_order_release);
+			newDataCpu.store(true, std::memory_order_release);
 			break;
 		case GPU:
-			new_data_gpu.store(true, std::memory_order_release);
+			newDataGpu.store(true, std::memory_order_release);
 			break;
 		case SD:
-			new_data_sd.store(true, std::memory_order_release);
+			newDataSd.store(true, std::memory_order_release);
 			break;
 		case NIC:
-			new_data_nic.store(true, std::memory_order_release);
+			newDataNic.store(true, std::memory_order_release);
 			break;
 		}
 

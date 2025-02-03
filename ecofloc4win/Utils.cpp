@@ -1,15 +1,24 @@
+/**
+ * @file Utilis.cpp
+ * @brief Definition of useful function.
+ * @author Ecofloc's Team
+ * @date 2025-02-03
+ */
+
 #define WIN32_LEAN_AND_MEAN  // Prevent inclusion of unnecessary Windows headers
 
 #include "Utils.h"
 #include <Windows.h>
 #include <iostream>
 
-using namespace std;
-
+/**
+ * @namespace Utils
+ * @brief Namespace for useful functionalities.
+ */
 namespace Utils
 {
 	// Function to get terminal size
-	int GetTerminalHeight()
+	int getTerminalHeight()
 	{
 		CONSOLE_SCREEN_BUFFER_INFO csbi;
 		if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi))

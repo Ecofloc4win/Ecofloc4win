@@ -156,7 +156,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CPU.h" />
-    <ClInclude Include="gpu.h" />
+    <ClInclude Include="GPU.h" />
     <ClInclude Include="MonitoringData.h" />
     <ClInclude Include="process.h" />
     <ClInclude Include="Utils.h" />

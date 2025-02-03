@@ -1,15 +1,29 @@
+/**
+ * @file MonitoringData.cpp
+ * @brief Definition of process management features.
+ * @author Ecofloc's Team
+ * @date 2025-02-03
+ */
+
 #include "MonitoringData.h"
 
 #include <unordered_map>
 #include <stdexcept>
 
+/**
+ * @brief Returns the Component as an object based on a string
+ *
+ * @param str the name of the component wanted as a string
+ * @return ComponentType The component wanted as an object
+ * @throw std::invalid_argument If str is not CPU, GPU, SD or NIC
+ */
 ComponentType stringToComponentType(const std::string& str)
 {
 	static const std::unordered_map<std::string, ComponentType> componentMap = {
-		{ "CPU", ComponentType::h_CPU },
-		{ "GPU", ComponentType::h_GPU },
-		{ "SD", ComponentType::h_SD },
-		{ "NIC", ComponentType::h_NIC }
+		{ "CPU", ComponentType::CPU },
+		{ "GPU", ComponentType::GPU },
+		{ "SD", ComponentType::SD },
+		{ "NIC", ComponentType::NIC }
 	};
 
 	auto it = componentMap.find(str);
@@ -72,26 +86,6 @@ void MonitoringData::disableComponent(const std::string& componentStr)
 	}
 }
 
-void MonitoringData::setCPUEnabled(bool enabled)
-{
-	cpuEnabled = enabled;
-}
-
-void MonitoringData::setGPUEnabled(bool enabled)
-{
-	gpuEnabled = enabled;
-}
-
-void MonitoringData::setSDEnabled(bool enabled)
-{
-	sdEnabled = enabled;
-}
-
-void MonitoringData::setNICEnabled(bool enabled)
-{
-	nicEnabled = enabled;
-}
-
 bool MonitoringData::isCPUEnabled() const
 {
 	return cpuEnabled;
@@ -112,24 +106,24 @@ bool MonitoringData::isNICEnabled() const
 	return nicEnabled;
 }
 
-void MonitoringData::setCPUEnergy(double energy)
+const double MonitoringData::getCPUEnergy() const
 {
-	cpuEnergy = energy;
+	return cpuEnergy;
 }
 
-void MonitoringData::setGPUEnergy(double energy)
+const double MonitoringData::getGPUEnergy() const
 {
-	gpuEnergy = energy;
+	return gpuEnergy;
 }
 
-void MonitoringData::setSDEnergy(double energy)
+const double MonitoringData::getSDEnergy() const
 {
-	sdEnergy = energy;
+	return sdEnergy;
 }
 
-void MonitoringData::setNICEnergy(double energy)
+const double MonitoringData::getNICEnergy() const
 {
-	nicEnergy = energy;
+	return nicEnergy;
 }
 
 void MonitoringData::updateCPUEnergy(double energy)

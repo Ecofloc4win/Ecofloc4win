@@ -4,6 +4,7 @@
 #include <string>
 #include <windows.h>
 #include <map>
+#include "SharedMemoryStruct.h"
 
 struct IoEventInfo {
 	DWORD pid;
@@ -65,8 +66,12 @@ public:
 	void updateSDEnergy(double energy);
 	void updateNICEnergy(double energy);
 
+	static bool initializeSharedMemory();
+	static void cleanupSharedMemory();
+
+	void updateSharedMemory();  // Nouvelle méthode pour mettre à jour la mémoire partagée
+
 	void addIrp(ULONGLONG irpAddress, const IoEventInfo& info);
 	void updateIrp(ULONGLONG irpAddress, ULONG bytesTransferred);
 	void removeIrp(ULONGLONG irpAddress);
 };
-

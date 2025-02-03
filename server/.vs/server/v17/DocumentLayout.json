@@ -1,0 +1,41 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\Grigori\\source\\repos\\server\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{F14AD8F6-23B8-48B4-B305-84DC040E0032}|server.vcxproj|C:\\Users\\Grigori\\source\\repos\\server\\server.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{F14AD8F6-23B8-48B4-B305-84DC040E0032}|server.vcxproj|solutionrelative:server.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "server.cpp",
+              "DocumentMoniker": "C:\\Users\\Grigori\\source\\repos\\server\\server.cpp",
+              "RelativeDocumentMoniker": "server.cpp",
+              "ToolTip": "C:\\Users\\Grigori\\source\\repos\\server\\server.cpp",
+              "RelativeToolTip": "server.cpp",
+              "ViewState": "AgIAAH4AAAAAAAAAAAAAAH4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-02-03T15:04:55.869Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

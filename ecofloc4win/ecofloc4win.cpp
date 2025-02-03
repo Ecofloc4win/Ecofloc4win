@@ -42,6 +42,7 @@
 #include "ftxui/dom/node.hpp"
 #include "ftxui/screen/color.hpp"
 #include <unordered_set>
+#include "SharedMemoryStruct.h"
 
 using namespace ftxui;
 
@@ -324,6 +325,36 @@ auto RenderTable(int scroll_position) -> Element
 
 int main()
 {
+	// Initialiser la mémoire partagée
+	g_hMapFile = CreateFileMappingA(
+		INVALID_HANDLE_VALUE,
+		NULL,
+		PAGE_READWRITE,
+		0,
+		sizeof(SharedEnergyData),
+		"Local\\EcoFlocEnergy");
+
+	if (g_hMapFile == NULL) {
+		std::cerr << "Erreur d'initialisation de la memoire partagee" << std::endl;
+		return 1;
+	}
+
+	g_pSharedData = (SharedEnergyData*)MapViewOfFile(
+		g_hMapFile,
+		FILE_MAP_ALL_ACCESS,
+		0,
+		0,
+		sizeof(SharedEnergyData));
+
+	if (g_pSharedData == NULL) {
+		CloseHandle(g_hMapFile);
+		std::cerr << "Erreur de mapping de la memoire partagee" << std::endl;
+		return 1;
+	}
+
+	// Initialiser les données à 0
+	memset(g_pSharedData, 0, sizeof(SharedEnergyData));
+
 	std::string input;
 	Component input_box = Input(&input, "Type here");
 	input_box |= CatchEvent([&](Event event)
@@ -756,6 +787,15 @@ int main()
 	sd_thread.join();
 	nic_thread.join();
 	cpu_thread.join();
+
+	// Nettoyer la mémoire partagée
+	if (g_pSharedData) {
+		UnmapViewOfFile(g_pSharedData);
+	}
+	if (g_hMapFile) {
+		CloseHandle(g_hMapFile);
+	}
+
 	return 0;
 }
 

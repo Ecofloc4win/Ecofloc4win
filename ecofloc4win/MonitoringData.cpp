@@ -1,7 +1,11 @@
 #include "MonitoringData.h"
-
 #include <unordered_map>
 #include <stdexcept>
+#include <chrono>
+
+// Définition des variables globales
+HANDLE g_hMapFile = NULL;
+SharedEnergyData* g_pSharedData = NULL;
 
 ComponentType stringToComponentType(const std::string& str)
 {
@@ -135,21 +139,82 @@ void MonitoringData::setNICEnergy(double energy)
 void MonitoringData::updateCPUEnergy(double energy)
 {
 	cpuEnergy += energy;
+	updateSharedMemory();
 }
 
 void MonitoringData::updateGPUEnergy(double energy)
 {
 	gpuEnergy += energy;
+	updateSharedMemory();
 }
 
 void MonitoringData::updateSDEnergy(double energy)
 {
 	sdEnergy += energy;
+	updateSharedMemory();
 }
 
 void MonitoringData::updateNICEnergy(double energy)
 {
 	nicEnergy += energy;
+	updateSharedMemory();
+}
+
+void MonitoringData::updateSharedMemory()
+{
+	if (g_pSharedData) {
+		g_pSharedData->cpuEnergy = cpuEnergy;
+		g_pSharedData->gpuEnergy = gpuEnergy;
+		g_pSharedData->sdEnergy = sdEnergy;
+		g_pSharedData->nicEnergy = nicEnergy;
+		g_pSharedData->timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+			std::chrono::system_clock::now().time_since_epoch()
+		).count();
+	}
+}
+
+bool MonitoringData::initializeSharedMemory()
+{
+	g_hMapFile = CreateFileMappingA(
+		INVALID_HANDLE_VALUE,
+		NULL,
+		PAGE_READWRITE,
+		0,
+		sizeof(SharedEnergyData),
+		"Local\\EcoFlocEnergy");
+
+	if (g_hMapFile == NULL) {
+		return false;
+	}
+
+	g_pSharedData = (SharedEnergyData*)MapViewOfFile(
+		g_hMapFile,
+		FILE_MAP_ALL_ACCESS,
+		0,
+		0,
+		sizeof(SharedEnergyData));
+
+	if (g_pSharedData == NULL) {
+		CloseHandle(g_hMapFile);
+		g_hMapFile = NULL;
+		return false;
+	}
+
+	// Initialiser les données à 0
+	memset(g_pSharedData, 0, sizeof(SharedEnergyData));
+	return true;
+}
+
+void MonitoringData::cleanupSharedMemory()
+{
+	if (g_pSharedData) {
+		UnmapViewOfFile(g_pSharedData);
+		g_pSharedData = NULL;
+	}
+	if (g_hMapFile) {
+		CloseHandle(g_hMapFile);
+		g_hMapFile = NULL;
+	}
 }
 
 void MonitoringData::addIrp(ULONGLONG irpAddress, const IoEventInfo& info) {

@@ -1,0 +1,3 @@
+﻿  server.cpp
+C:\Users\Grigori\source\repos\server\server.cpp(117,44): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+  server.vcxproj -> C:\Users\Grigori\source\repos\server\x64\Debug\server.exe

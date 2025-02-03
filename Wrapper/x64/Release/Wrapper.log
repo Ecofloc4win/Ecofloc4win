@@ -1,0 +1,9 @@
+﻿  pch.cpp
+  AssemblyInfo.cpp
+  Wrapper.cpp
+  Generating Code...
+  .NETCoreApp,Version=v8.0.AssemblyAttributes.cpp
+  AssemblyInfo.obj : MSIL module encountered; incremental linking is disabled for MSIL; performing full link
+     Creating library C:\Users\Grigori\Desktop\New folder\Ecofloc4win\x64\Release\Wrapper.lib and object C:\Users\Grigori\Desktop\New folder\Ecofloc4win\x64\Release\Wrapper.exp
+  Wrapper.vcxproj -> C:\Users\Grigori\Desktop\New folder\Ecofloc4win\x64\Release\Wrapper.dll
+          1 file(s) copied.

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EcoFloc Energy Monitor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .energy-box {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .energy-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2196F3;
+        }
+        .title {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .timestamp {
+            color: #666;
+            font-size: 0.9em;
+            text-align: right;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">EcoFloc Energy Monitor</h1>
+        
+        <div class="energy-box">
+            <div>CPU Energy</div>
+            <div class="energy-value" id="cpuEnergy">0.00 J</div>
+        </div>
+        
+        <div class="energy-box">
+            <div>GPU Energy</div>
+            <div class="energy-value" id="gpuEnergy">0.00 J</div>
+        </div>
+        
+        <div class="energy-box">
+            <div>Storage Energy</div>
+            <div class="energy-value" id="sdEnergy">0.00 J</div>
+        </div>
+        
+        <div class="energy-box">
+            <div>Network Energy</div>
+            <div class="energy-value" id="nicEnergy">0.00 J</div>
+        </div>
+
+        <div class="timestamp" id="timestamp">Last update: Never</div>
+    </div>
+
+    <script>
+        function updateValues() {
+            fetch('http://localhost:13000')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('cpuEnergy').textContent = data.cpu_energy.toFixed(2) + ' J';
+                    document.getElementById('gpuEnergy').textContent = data.gpu_energy.toFixed(2) + ' J';
+                    document.getElementById('sdEnergy').textContent = data.sd_energy.toFixed(2) + ' J';
+                    document.getElementById('nicEnergy').textContent = data.nic_energy.toFixed(2) + ' J';
+                    
+                    const date = new Date(data.timestamp);
+                    document.getElementById('timestamp').textContent = 
+                        'Last update: ' + date.toLocaleTimeString();
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Update every second
+        setInterval(updateValues, 1000);
+        updateValues();  // Initial update
+    </script>
+</body>
+</html>

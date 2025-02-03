@@ -19,13 +19,6 @@
  */
 ComponentType stringToComponentType(const std::string& str)
 {
-	static const std::unordered_map<std::string, ComponentType> componentMap = {
-		{ "CPU", ComponentType::CPU },
-		{ "GPU", ComponentType::GPU },
-		{ "SD", ComponentType::SD },
-		{ "NIC", ComponentType::NIC }
-	};
-
 	auto it = componentMap.find(str);
 	if (it != componentMap.end())
 	{

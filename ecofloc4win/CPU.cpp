@@ -147,10 +147,10 @@ namespace CPU
         freq = 0.0;
         int cpu_count = 0;
 
-        for (int i = 0; i < (sizeof(*clock_array) / sizeof(clock_array[0])); i++)
+        for (int i = 0; i < clock_size; i++)
         {
             freq += clock_array[i];
-            std::cout << "CPU CLOCK[" << i+1 << "] : " << clock_array[i] << std::endl;
+            std::cout << "CPU CLOCK[" << i << "] : " << clock_array[i] << std::endl;
             cpu_count++;
         }
 
@@ -190,6 +190,9 @@ namespace CPU
         int volt_size = 0;
         float* volt_array = get_cpu_cores_voltage(&volt_size);
 
+        std::cout << "Volt array size : " << volt_size << std::endl;
+        std::cout << "Volt array[0] : " << volt_array[0] << std::endl;
+
         if (!volt_array)
         {
             std::cerr << "Failed to retrieve CPU voltage." << std::endl;
@@ -201,10 +204,10 @@ namespace CPU
         volt = 0.0;
         int cpu_count = 0;
 
-        for (int i = 0; i < (sizeof(volt_array) / sizeof(volt_array[0])); i++)
+        for (int i = 0; i < volt_size; i++)
         {
             volt += volt_array[i];
-            std::cout << "CPU VOLT[" << i + 1 << "] : " << volt_array[i] << std::endl;
+            std::cout << "CPU VOLT[" << i << "] : " << volt_array[i] << std::endl;
             cpu_count++;
         }
 
@@ -264,7 +267,7 @@ namespace CPU
 
             if (!getAvgVolt(avg_volt))
             {
-                std::cerr << "Error while attempting to get the cpu frequence";
+                std::cerr << "Error while attempting to get the cpu voltage";
                 return false;
             }
             //std::cout << "Avg volt : " << avg_volt << std::endl;
@@ -298,7 +301,7 @@ namespace CPU
             power = 0.0;
             int cpu_count = 0;
 
-            for (int i = 0; i < (sizeof(*power_array) / sizeof(power_array[0])); i++)
+            for (int i = 0; i < power_size; i++)
             {
                 power += power_array[i];
                 std::cout << "CPU POWER[" << i + 1 << "] : " << power_array[i] << std::endl;

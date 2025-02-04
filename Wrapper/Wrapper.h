@@ -27,24 +27,31 @@ public:
     }
 
     float^ getCPUCoresPower() {
-        try {
-            RefreshHardware();
-            return cpuPower;
-        }
-        catch (Exception^ ex) {
-            Console::WriteLine("Error in getCPUCoresPower: " + ex->Message);
-            return nullptr;
-        }
+        RefreshHardware();
+        return cpuPower;
+    }
+
+    List<float>^ getCPUCoresClocks() {
+        RefreshHardware();
+        return cpuClocks;
+    }
+
+    List<float>^ getCPUCoresVoltages() {
+        RefreshHardware();
+        return cpuVoltages;
     }
 
 private:
     Computer^ computer;
     float^ cpuPower = gcnew float();
+	List<float>^ cpuClocks = gcnew List<float>();
+	List<float>^ cpuVoltages = gcnew List<float>();
     List<ISensor^>^ powerSensors = gcnew List<ISensor^>();
 	List<ISensor^>^ clockSensors = gcnew List<ISensor^>();  
 	List<ISensor^>^ voltageSensors = gcnew List<ISensor^>();
     DateTime lastUpdate;
     TimeSpan updateInterval = TimeSpan::FromSeconds(2); // 2-second refresh interval
+	bool isIntel = true;
 
     String^ ExtractValueBetweenSlashes(String^ input)
     {
@@ -82,6 +89,7 @@ private:
                     }
                 }
                 else {
+                    isIntel = false;
                     for (int j = 0; j < hardware->Sensors->Length; j++)
                     {
                         ISensor^ sensor = hardware->Sensors[j];
@@ -96,24 +104,41 @@ private:
                             }
                         }
                     }
-                    Console::WriteLine(clockSensors->Count);
-                    Console::WriteLine(powerSensors->Count);
                 }
-
             }
         }
     }
 
-    void RefreshHardware() {
+    void RefreshHardware()
+    {
         DateTime now = DateTime::Now;
-        if ((now - lastUpdate) >= updateInterval) {
+        if ((now - lastUpdate) >= updateInterval)
+        {
             lastUpdate = now;
 
             cpuPower = 0.0f;
-
-            for each (ISensor ^ sensor in powerSensors) {
-                if (sensor->Value.HasValue) {
-                    cpuPower = sensor->Value.Value;
+            if (isIntel)
+            {
+                for each (ISensor ^ sensor in powerSensors)
+                {
+                    if (sensor->Value.HasValue) {
+                        cpuPower = sensor->Value.Value;
+                    }
+                }
+            }
+            else
+            {
+                for each(ISensor ^ sensor in clockSensors)
+                {
+                    if (sensor->Value.HasValue) {
+                        cpuClocks->Add(sensor->Value.Value);
+                    }
+                }
+                for each(ISensor ^ sensor in voltageSensors)
+                {
+                    if (sensor->Value.HasValue) {
+                        cpuVoltages->Add(sensor->Value.Value);
+                    }
                 }
             }
         }

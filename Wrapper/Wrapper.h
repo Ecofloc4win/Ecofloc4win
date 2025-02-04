@@ -41,6 +41,11 @@ public:
         return cpuVoltages;
     }
 
+    bool getIsIntel()
+    {
+        return isIntel;
+    }
+
 private:
     Computer^ computer;
     float^ cpuPower = gcnew float();

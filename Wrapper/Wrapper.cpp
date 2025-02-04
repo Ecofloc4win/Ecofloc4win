@@ -3,6 +3,14 @@
 #include "Wrapper.h"
 #include <vector>
 
+extern "C" __declspec(dllexport) bool getIsIntel() {
+	ManagedBridge^ bridge = gcnew ManagedBridge();
+	bool isIntel = bridge->getIsIntel();
+	delete bridge;
+
+	return isIntel;
+}
+
 extern "C" __declspec(dllexport) float* getCPUCoresPower(int* size) {
 	ManagedBridge^ bridge = gcnew ManagedBridge();
 	float^ power = bridge->getCPUCoresPower();

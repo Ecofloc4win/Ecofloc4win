@@ -703,13 +703,16 @@ int main()
 					uint64_t startPidTime = CPU::getPidTime(data.getPids()[0]);
 
 					CPU::getCurrentPower(startTotalPower);
+					//std::cout << "Start power : " << startTotalPower << std::endl;
 
 					// Monitor for the specified interval
 					std::this_thread::sleep_for(std::chrono::milliseconds(interval));
 
 					CPU::getCurrentPower(endTotalPower);
+					//std::cout << "End power : " << endTotalPower << std::endl;
 
 					avgPowerInterval = (startTotalPower + endTotalPower) / 2;
+					//std::cout << "Avg power : " << endTotalPower << std::endl;
 
 					uint64_t endCPUTime = CPU::getCPUTime();
 					uint64_t endPidTime = CPU::getPidTime(data.getPids()[0]);

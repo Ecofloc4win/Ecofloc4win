@@ -432,6 +432,7 @@ FodyWeavers.xsd
 ### vcpkg ###
 # Vcpkg
 
+log.txt
 vcpkg-manifest-install.log
 
 ## Manifest Mode

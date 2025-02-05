@@ -3,8 +3,10 @@
 #include <msclr/marshal_cppstd.h>
 #include <iostream>
 #include <ctime>
+#include <fstream>
 
 using namespace System;
+using namespace System::IO;
 using namespace System::Collections::Generic;
 using namespace System::Text::RegularExpressions;
 using namespace LibreHardwareMonitor::Hardware;
@@ -13,17 +15,20 @@ public ref class ManagedBridge
 {
 public:
     ManagedBridge() {
-        try {
-            computer = gcnew Computer();
-            computer->IsCpuEnabled = true;
-            computer->Open();
-            lastUpdate = DateTime::Now - updateInterval;
+        computer = gcnew Computer();
+        computer->IsCpuEnabled = true;
+        computer->Open();
 
-            InitializeSensors();
-        }
-        catch (Exception^ ex) {
-            Console::WriteLine("Error in ManagedBridge constructor: " + ex->Message);
-        }
+		String^ filename = "log.txt";
+
+		StreamWriter^ sw = gcnew StreamWriter(filename);
+		sw->WriteLine("Log file created at {0}", DateTime::Now);
+		sw->WriteLine(computer->GetReport());
+		sw->Close();
+
+        lastUpdate = DateTime::Now - updateInterval;
+
+        InitializeSensors();
     }
 
     float^ getCPUCoresPower() {
@@ -90,6 +95,7 @@ private:
                             {
                                 powerSensors->Add(sensor);
                             }
+
                         }
                     }
                 }

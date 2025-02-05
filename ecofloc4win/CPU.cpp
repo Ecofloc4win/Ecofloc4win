@@ -150,7 +150,6 @@ namespace CPU
         for (int i = 0; i < clock_size; i++)
         {
             freq += clock_array[i];
-            std::cout << "CPU CLOCK[" << i << "] : " << clock_array[i] << std::endl;
             cpu_count++;
         }
 
@@ -190,9 +189,6 @@ namespace CPU
         int volt_size = 0;
         float* volt_array = get_cpu_cores_voltage(&volt_size);
 
-        std::cout << "Volt array size : " << volt_size << std::endl;
-        std::cout << "Volt array[0] : " << volt_array[0] << std::endl;
-
         if (!volt_array)
         {
             std::cerr << "Failed to retrieve CPU voltage." << std::endl;
@@ -207,7 +203,6 @@ namespace CPU
         for (int i = 0; i < volt_size; i++)
         {
             volt += volt_array[i];
-            std::cout << "CPU VOLT[" << i << "] : " << volt_array[i] << std::endl;
             cpu_count++;
         }
 
@@ -263,19 +258,14 @@ namespace CPU
                 std::cerr << "Error while attempting to get the cpu frequence";
                 return false;
             }
-            //std::cout << "Avg Freq : " << avg_freq << std::endl;
 
             if (!getAvgVolt(avg_volt))
             {
                 std::cerr << "Error while attempting to get the cpu voltage";
                 return false;
             }
-            //std::cout << "Avg volt : " << avg_volt << std::endl;
 
-
-            //std::cout << "capacitance : " << capacitance << std::endl;
             power = capacitance * avg_freq * avg_volt * avg_volt;
-            //std::cout << "power : " << power << std::endl;
         }
         else
         {

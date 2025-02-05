@@ -6,6 +6,7 @@
  */
 
 #include "MonitoringData.h"
+#include "Utils.h"
 
 #include <unordered_map>
 #include <stdexcept>
@@ -17,10 +18,10 @@
  * @return ComponentType The component wanted as an object
  * @throw std::invalid_argument If str is not CPU, GPU, SD or NIC
  */
-ComponentType stringToComponentType(const std::string& str)
+Utils::ComponentType stringToComponentType(const std::string& str)
 {
-	auto it = componentMap.find(str);
-	if (it != componentMap.end())
+	auto it = Utils::componentMap.find(str);
+	if (it != Utils::componentMap.end())
 	{
 		return it->second;
 	}
@@ -40,20 +41,20 @@ std::vector<int> MonitoringData::getPids() const
 
 void MonitoringData::enableComponent(const std::string& componentStr)
 {
-	ComponentType component = stringToComponentType(componentStr);
+	Utils::ComponentType component = stringToComponentType(componentStr);
 
 	switch (component)
 	{
-	case CPU:
+	case Utils::CPU:
 		cpuEnabled = true;
 		break;
-	case GPU:
+	case Utils::GPU:
 		gpuEnabled = true;
 		break;
-	case SD:
+	case Utils::SD:
 		sdEnabled = true;
 		break;
-	case NIC:
+	case Utils::NIC:
 		nicEnabled = true;
 		break;
 	}
@@ -61,19 +62,19 @@ void MonitoringData::enableComponent(const std::string& componentStr)
 
 void MonitoringData::disableComponent(const std::string& componentStr)
 {
-	ComponentType component = stringToComponentType(componentStr);
+	Utils::ComponentType component = stringToComponentType(componentStr);
 	switch (component)
 	{
-	case CPU:
+	case Utils::CPU:
 		cpuEnabled = false;
 		break;
-	case GPU:
+	case Utils::GPU:
 		gpuEnabled = false;
 		break;
-	case SD:
+	case Utils::SD:
 		sdEnabled = false;
 		break;
-	case NIC:
+	case Utils::NIC:
 		nicEnabled = false;
 		break;
 	}
@@ -99,22 +100,22 @@ bool MonitoringData::isNICEnabled() const
 	return nicEnabled;
 }
 
-const double MonitoringData::getCPUEnergy() const
+double MonitoringData::getCPUEnergy() const
 {
 	return cpuEnergy;
 }
 
-const double MonitoringData::getGPUEnergy() const
+double MonitoringData::getGPUEnergy() const
 {
 	return gpuEnergy;
 }
 
-const double MonitoringData::getSDEnergy() const
+double MonitoringData::getSDEnergy() const
 {
 	return sdEnergy;
 }
 
-const double MonitoringData::getNICEnergy() const
+double MonitoringData::getNICEnergy() const
 {
 	return nicEnergy;
 }

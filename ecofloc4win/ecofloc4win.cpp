@@ -84,7 +84,7 @@ std::atomic<bool> newDataNic(false);
 /**
  * @brief List of action you can do when using ecofloc
  */
-std::unordered_map<string, int> actions =
+std::unordered_map<std::string, int> actions =
 {
 	{"enable", 1},
 	{"disable", 2},
@@ -99,7 +99,7 @@ std::unordered_map<string, int> actions =
  *
  * can be replace
  */
-std::unordered_map<string, pair<vector<process>, bool>> comp = { {"CPU", {{}, false}}, {"GPU", {{}, false} }, {"SD", {{}, false }}, {"NIC", {{}, false }} };
+std::unordered_map<std::string, std::pair<std::vector<process>, bool>> comp = { {"CPU", {{}, false}}, {"GPU", {{}, false} }, {"SD", {{}, false }}, {"NIC", {{}, false }} };
 
 /**
  * @brief The time interval between 2 calculations in millisecond
@@ -168,7 +168,7 @@ std::wstring getLocalizedCounterPath(const std::wstring& processName, const std:
  * @param processID The ID of the Process
  * @return wstring the name of the Process
  */
-wstring getProcessNameByPID(DWORD processID);
+std::wstring getProcessNameByPID(DWORD processID);
 
 /**
  * @brief Gets the index of a counter in the registry based on its name.
@@ -221,7 +221,7 @@ auto createTableRows() -> std::vector<std::vector<std::string>>
 auto renderTable(int scrollPosition) -> Element
 {
 	auto tableData = createTableRows();
-	int terminalHeight = getTerminalHeight();
+	int terminalHeight = Utils::getTerminalHeight();
 	int visibleRows = terminalHeight - 8; // Adjust for input box and borders
 
 	// Prepare rows for the visible portion
@@ -289,7 +289,7 @@ int main()
 
 	component = CatchEvent(component, [&](Event event)
 	{
-		int terminalHeight = getTerminalHeight();
+		int terminalHeight = Utils::getTerminalHeight();
 		int visibleRows = terminalHeight - 8;
 
 		if ((int)monitoringData.size() <= visibleRows)
@@ -777,7 +777,7 @@ DWORD getCounterIndex(const std::string& counterName)
 	return -1;  // Counter name not found
 }
 
-wstring getProcessNameByPID(DWORD processID)
+std::wstring getProcessNameByPID(DWORD processID)
 {
 	TCHAR processName[MAX_PATH] = TEXT("<unknown>");
 
@@ -864,7 +864,7 @@ void readCommand(std::string commandHandle)
 {
 	std::istringstream tokenStream(commandHandle);
 
-	std::vector<string> chain;
+	std::vector<std::string> chain;
 
 	while (getline(tokenStream, commandHandle, ' '))
 	{
@@ -900,7 +900,7 @@ void readCommand(std::string commandHandle)
 		{
 			if (chain[1] == "-p")
 			{
-				if (all_of(chain[2].begin(), chain[2].end(), std::isdigit))
+				if (all_of(chain[2].begin(), chain[2].end(), ::isdigit))
 				{
 					if (chain[3] == "CPU" || chain[3] == "GPU" || chain[3] == "SD" || chain[3] == "NIC")
 					{
@@ -941,7 +941,7 @@ void readCommand(std::string commandHandle)
 	case 4:
 		if (chain.size() == 2)
 		{
-			if (all_of(chain[1].begin(), chain[1].end(), std::isdigit))
+			if (all_of(chain[1].begin(), chain[1].end(), ::isdigit))
 			{
 				removeProcByLineNumber(chain[1]);
 			}
@@ -959,7 +959,7 @@ void readCommand(std::string commandHandle)
 	case 5:
 		if (chain.size() == 2)
 		{
-			if (all_of(chain[1].begin(), chain[1].end(), std::isdigit))
+			if (all_of(chain[1].begin(), chain[1].end(), ::isdigit))
 			{
 				interval = stoi(chain[1]);
 				std::cout << "Interval has been changed" << std::endl;
@@ -1035,27 +1035,27 @@ void addProcPid(const std::string& pid, const std::string& component)
 
 			if (it == monitoringData.end())
 			{
-				MonitoringData data(wstringToString(processName), { processId });
+				MonitoringData data(Utils::wstringToString(processName), { processId });
 				data.enableComponent(component);
 				monitoringData.push_back(data);
-				auto it2 = componentMap.find(component);
-				if (it2 != componentMap.end())
+				auto it2 = Utils::componentMap.find(component);
+				if (it2 != Utils::componentMap.end())
 				{
 					it2->second;
 				}
 				
 				switch (it2->second)
 				{
-				case CPU:
+				case Utils::CPU:
 					newDataCpu.store(true, std::memory_order_release);
 					break;
-				case GPU:
+				case Utils::GPU:
 					newDataGpu.store(true, std::memory_order_release);
 					break;
-				case SD:
+				case Utils::SD:
 					newDataSd.store(true, std::memory_order_release);
 					break;
-				case NIC:
+				case Utils::NIC:
 					newDataNic.store(true, std::memory_order_release);
 					break;
 				}
@@ -1123,24 +1123,24 @@ void addProcName(const std::string& name, const std::string& component)
 			MonitoringData data(name, pids);
 			data.enableComponent(component);
 			monitoringData.push_back(data);
-			auto it2 = componentMap.find(component);
-			if (it2 != componentMap.end())
+			auto it2 = Utils::componentMap.find(component);
+			if (it2 != Utils::componentMap.end())
 			{
 				it2->second;
 			}
 
 			switch (it2->second)
 			{
-			case CPU:
+			case Utils::CPU:
 				newDataCpu.store(true, std::memory_order_release);
 				break;
-			case GPU:
+			case Utils::GPU:
 				newDataGpu.store(true, std::memory_order_release);
 				break;
-			case SD:
+			case Utils::SD:
 				newDataSd.store(true, std::memory_order_release);
 				break;
-			case NIC:
+			case Utils::NIC:
 				newDataNic.store(true, std::memory_order_release);
 				break;
 			}
@@ -1263,24 +1263,24 @@ void enable(const std::string& lineNumber, const std::string& component)
 		auto& data = monitoringData[line];
 		data.enableComponent(component);
 
-		auto it = componentMap.find(component);
-		if (it != componentMap.end())
+		auto it = Utils::componentMap.find(component);
+		if (it != Utils::componentMap.end())
 		{
 			it->second;
 		}
 
 		switch (it->second)
 		{
-		case CPU:
+		case Utils::CPU:
 			newDataCpu.store(true, std::memory_order_release);
 			break;
-		case GPU:
+		case Utils::GPU:
 			newDataGpu.store(true, std::memory_order_release);
 			break;
-		case SD:
+		case Utils::SD:
 			newDataSd.store(true, std::memory_order_release);
 			break;
-		case NIC:
+		case Utils::NIC:
 			newDataNic.store(true, std::memory_order_release);
 			break;
 		}
@@ -1323,24 +1323,24 @@ void disable(const std::string& lineNumber, const std::string& component)
 		auto& data = monitoringData[line];
 		data.disableComponent(component);
 
-		auto it = componentMap.find(component);
-		if (it != componentMap.end())
+		auto it = Utils::componentMap.find(component);
+		if (it != Utils::componentMap.end())
 		{
 			it->second;
 		}
 
 		switch (it->second)
 		{
-		case CPU:
+		case Utils::CPU:
 			newDataCpu.store(true, std::memory_order_release);
 			break;
-		case GPU:
+		case Utils::GPU:
 			newDataGpu.store(true, std::memory_order_release);
 			break;
-		case SD:
+		case Utils::SD:
 			newDataSd.store(true, std::memory_order_release);
 			break;
-		case NIC:
+		case Utils::NIC:
 			newDataNic.store(true, std::memory_order_release);
 			break;
 		}

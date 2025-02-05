@@ -1,27 +1,27 @@
 #include "process.h"
 
-process::process(string pid, string name)
+process::process(std::string pid, std::string name)
 {
 	this->setPid(pid);
 	this->setName(name);
 }
 
-string process::getPid() const
+std::string process::getPid() const
 {
 	return this->m_pid;
 }
 
-string process::getName()
+std::string process::getName()
 {
 	return this->m_name;
 }
 
-void process::setPid(string pid)
+void process::setPid(std::string pid)
 {
 	this->m_pid = pid;
 }
 
-void process::setName(string name)
+void process::setName(std::string name)
 {
 	this->m_name = name;
 }

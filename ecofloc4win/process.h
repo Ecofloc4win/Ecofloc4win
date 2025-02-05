@@ -13,12 +13,12 @@ class process
         /**
         * @brief the pid of the process
         */
-        string m_pid;
+        std::string m_pid;
 
         /**
         * @brief the name of the process
         */
-        string m_name;
+        std::string m_name;
 
     public:
 
@@ -28,34 +28,34 @@ class process
         * @param pid The process ID.
         * @param name The process name.
         */
-        process(string pid, string name);
+        process(std::string pid, std::string name);
 
         /**
         * @brief Getter for the process ID.
         * 
-        * @return string The process ID.
+        * @return std::string The process ID.
         */
-        string getPid() const;
+        std::string getPid() const;
 
         /**
         * @brief Getter for the process name.
         * 
-        * @return string The process name.
+        * @return std::string The process name.
         */
-        string getName();
+        std::string getName();
 
         /**
         * @brief Setter for the process ID.
         *
         * @param pid The process ID.
         */
-        void setPid(string pid);
+        void setPid(std::string pid);
 
         /**
         * @brief Setter for the process name.
         *
         * @param name The process name.
         */ 
-        void setName(string name);
+        void setName(std::string name);
 };
 

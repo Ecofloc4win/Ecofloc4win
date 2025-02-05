@@ -18,13 +18,15 @@ namespace Utils
 {
 	enum ComponentType { CPU, GPU, SD, NIC };
 
-	std::unordered_map<std::string, ComponentType> componentMap =
-	{
-		{ "CPU", ComponentType::CPU },
-		{ "GPU", ComponentType::GPU },
-		{ "SD", ComponentType::SD },
-		{ "NIC", ComponentType::NIC }
-	};
+	//std::unordered_map<std::string, ComponentType> componentMap =
+	//{
+	//	{ "CPU", ComponentType::CPU },
+	//	{ "GPU", ComponentType::GPU },
+	//	{ "SD", ComponentType::SD },
+	//	{ "NIC", ComponentType::NIC }
+	//};
+
+	extern std::unordered_map<std::string, ComponentType> componentMap;
 	
     /**
 	 * @brief Retrieves the height of the terminal window.
@@ -34,11 +36,11 @@ namespace Utils
 	int getTerminalHeight();
 
 	/**
-	 * @brief Converts a wide string to a string.
+	 * @brief Converts a wide std::wstring to a std::string.
 	 *
-	 * @param wide_string The wide string to convert.
-	 * @return string The converted string.
+	 * @param std::wide_string The wide std::string to convert.
+	 * @return std::string The converted std::string.
 	 */
-	string wstringToString(const wstring& wide_string);
+	std::string wstringToString(const std::wstring& wide_string);
 }
 

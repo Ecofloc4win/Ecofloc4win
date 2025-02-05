@@ -93,6 +93,8 @@ Once installed, follow these steps to use **EcoFloc4Win**:
    - add [ -p <pid> | -n <name> ] [ CPU | GPU | NIC | SD ]:
    ```
    add -p 0 NIC
+   ```
+   ```
    add -n process.exe CPU
    ```
    - remove <line>:

@@ -101,7 +101,7 @@ private:
                         if (sensor->Name->Contains("Core #")) {
                             if (sensor->SensorType == SensorType::Voltage)
                             {
-                                powerSensors->Add(sensor);
+                                voltageSensors->Add(sensor);
                             }
                             else if (sensor->SensorType == SensorType::Clock)
                             {

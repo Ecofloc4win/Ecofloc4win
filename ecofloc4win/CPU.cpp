@@ -294,7 +294,6 @@ namespace CPU
             for (int i = 0; i < power_size; i++)
             {
                 power += power_array[i];
-                std::cout << "CPU POWER[" << i + 1 << "] : " << power_array[i] << std::endl;
                 cpu_count++;
             }
 

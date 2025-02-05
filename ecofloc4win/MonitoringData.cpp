@@ -44,16 +44,16 @@ void MonitoringData::enableComponent(const std::string& componentStr)
 
 	switch (component)
 	{
-	case h_CPU:
+	case CPU:
 		cpuEnabled = true;
 		break;
-	case h_GPU:
+	case GPU:
 		gpuEnabled = true;
 		break;
-	case h_SD:
+	case SD:
 		sdEnabled = true;
 		break;
-	case h_NIC:
+	case NIC:
 		nicEnabled = true;
 		break;
 	}
@@ -64,16 +64,16 @@ void MonitoringData::disableComponent(const std::string& componentStr)
 	ComponentType component = stringToComponentType(componentStr);
 	switch (component)
 	{
-	case h_CPU:
+	case CPU:
 		cpuEnabled = false;
 		break;
-	case h_GPU:
+	case GPU:
 		gpuEnabled = false;
 		break;
-	case h_SD:
+	case SD:
 		sdEnabled = false;
 		break;
-	case h_NIC:
+	case NIC:
 		nicEnabled = false;
 		break;
 	}

@@ -150,7 +150,7 @@ namespace CPU
         for (int i = 0; i < clock_size; i++)
         {
             freq += clock_array[i];
-            std::cout << "CPU CLOCK[" << i << "] : " << clock_array[i] << std::endl;
+            //std::cout << "CPU CLOCK[" << i << "] : " << clock_array[i] << std::endl;
             cpu_count++;
         }
 
@@ -190,8 +190,8 @@ namespace CPU
         int volt_size = 0;
         float* volt_array = get_cpu_cores_voltage(&volt_size);
 
-        std::cout << "Volt array size : " << volt_size << std::endl;
-        std::cout << "Volt array[0] : " << volt_array[0] << std::endl;
+        //std::cout << "Volt array size : " << volt_size << std::endl;
+        //std::cout << "Volt array[0] : " << volt_array[0] << std::endl;
 
         if (!volt_array)
         {
@@ -207,7 +207,7 @@ namespace CPU
         for (int i = 0; i < volt_size; i++)
         {
             volt += volt_array[i];
-            std::cout << "CPU VOLT[" << i << "] : " << volt_array[i] << std::endl;
+            //std::cout << "CPU VOLT[" << i << "] : " << volt_array[i] << std::endl;
             cpu_count++;
         }
 
@@ -304,7 +304,7 @@ namespace CPU
             for (int i = 0; i < power_size; i++)
             {
                 power += power_array[i];
-                std::cout << "CPU POWER[" << i + 1 << "] : " << power_array[i] << std::endl;
+                //std::cout << "CPU POWER[" << i + 1 << "] : " << power_array[i] << std::endl;
                 cpu_count++;
             }
 

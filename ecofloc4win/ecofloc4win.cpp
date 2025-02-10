@@ -272,20 +272,35 @@ std::wstring getLocalizedCounterPath(const std::wstring& processName, const std:
 
 auto CreateTableRows() -> std::vector<std::vector<std::string>>
 {
+	int rowNumber = 1;
 	std::vector<std::vector<std::string>> rows;
 	std::lock_guard<std::mutex> lock(data_mutex);
 
-	rows.emplace_back(std::vector<std::string>{"Application Name", "CPU", "GPU", "SD", "NIC"});
+	rows.emplace_back(std::vector<std::string>{"Line", "Application Name", "CPU", "GPU", "SD", "NIC"});
 	for (const auto& data : monitoringData)
 	{
+		std::ostringstream cpuEnergyStream;
+		cpuEnergyStream << std::fixed << std::setprecision(2) << data.cpuEnergy;
+
+		std::ostringstream gpuEnergyStream;
+		gpuEnergyStream << std::fixed << std::setprecision(2) << data.gpuEnergy;
+
+		std::ostringstream sdEnergyStream;
+		sdEnergyStream << std::fixed << std::setprecision(2) << data.sdEnergy;
+
+		std::ostringstream nicEnergyStream;
+		nicEnergyStream << std::fixed << std::setprecision(2) << data.nicEnergy;
+
 		rows.emplace_back(std::vector<std::string>
 		{
+			std::to_string(rowNumber),
 			data.getName(),
-				std::to_string(data.cpuEnergy),
-				std::to_string(data.gpuEnergy),
-				std::to_string(data.sdEnergy),
-				std::to_string(data.nicEnergy)
+			" " + cpuEnergyStream.str() + " J ",
+			" " + gpuEnergyStream.str() + " J ",
+			" " + sdEnergyStream.str() + " J ",
+			" " + nicEnergyStream.str() + " J "
 		});
+		rowNumber++;
 	}
 
 	return rows;
@@ -313,7 +328,8 @@ auto RenderTable(int scroll_position) -> Element
 	table.SelectRow(0).DecorateCells(center);
 	table.SelectRow(0).SeparatorVertical(LIGHT);
 	table.SelectRow(0).Border();
-	table.SelectColumn(0).Decorate(flex);
+	table.SelectColumn(0).DecorateCells(center);
+	table.SelectColumn(1).Decorate(flex);
 	table.SelectColumns(0, -1).SeparatorVertical(LIGHT);
 	auto content = table.SelectRows(1, -1);
 	content.DecorateCellsAlternateRow(color(Color::Red), 3, 0);
@@ -734,13 +750,16 @@ int main()
 					uint64_t startPidTime = CPU::getPidTime(data.getPids()[0]);
 
 					CPU::getCurrentPower(startTotalPower);
+					//std::cout << "Start power : " << startTotalPower << std::endl;
 
 					// Monitor for the specified interval
 					std::this_thread::sleep_for(std::chrono::milliseconds(interval));
 
 					CPU::getCurrentPower(endTotalPower);
+					//std::cout << "End power : " << endTotalPower << std::endl;
 
 					avgPowerInterval = (startTotalPower + endTotalPower) / 2;
+					//std::cout << "Avg power : " << endTotalPower << std::endl;
 
 					uint64_t endCPUTime = CPU::getCPUTime();
 					uint64_t endPidTime = CPU::getPidTime(data.getPids()[0]);

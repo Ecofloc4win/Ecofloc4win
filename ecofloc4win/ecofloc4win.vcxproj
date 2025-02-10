@@ -161,6 +161,7 @@
   <ItemGroup>
     <ClInclude Include="CPU.h" />
     <ClInclude Include="gpu.h" />
+    <ClInclude Include="json.hpp" />
     <ClInclude Include="MonitoringData.h" />
     <ClInclude Include="process.h" />
     <ClInclude Include="SharedMemoryStruct.h" />

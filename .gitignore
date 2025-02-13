@@ -437,3 +437,6 @@ FodyWeavers.xsd
 
 # Compiled Css
 */output.css
+
+#Json files
+*/Json/

@@ -54,14 +54,12 @@ const recupGraphData = (startTime) => {
 
 const launchDownload = (file) => {
     try {
-        console.log('File received in launchDownload:', file);
         
         if (!(file instanceof Blob)) {
             throw new Error('Invalid file type - expected Blob');
         }
         
         let url = window.URL.createObjectURL(file);
-        console.log('Created URL:', url);
         let a = document.createElement('a');
         a.href = url;
 
@@ -91,8 +89,7 @@ const getStartMonitoringTime = () => {
 
 async function getCsv(graph){
     try {
-        console.log('Sending data to server:', graph);
-        
+
         const response = await fetch('http://localhost:3030/export-csv', {
             method: 'POST',
             headers: {
@@ -101,9 +98,6 @@ async function getCsv(graph){
             body: JSON.stringify(graph)
         });
 
-        console.log('Server response status:', response.status);
-        console.log('Server response headers:', [...response.headers.entries()]);
-
         if (!response.ok) {
             const errorText = await response.text();
             console.error('Server error:', errorText);
@@ -111,9 +105,6 @@ async function getCsv(graph){
         }
 
         const blob = await response.blob();
-        console.log('Blob created:', blob);
-        console.log('Blob type:', blob.type);
-        console.log('Blob size:', blob.size);
 
         if (!blob || blob.size === 0) {
             throw new Error('Received empty blob from server');

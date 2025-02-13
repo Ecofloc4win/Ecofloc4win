@@ -50,10 +50,12 @@ let graphTOTAL = new DynamicGraph("graphTOTAL", "rgb(192, 132, 252)");
 startButton.addEventListener("click", () => {
     setInterval(readFile, 500);
     document.querySelector("#exportCSV").disabled = true;
+    document.querySelector("#exportCSV").classList.add("disabled");
 });
 
 stopButton.addEventListener("click", () => {
     clearInterval(readFile);
     document.querySelector("#exportCSV").disabled = false;
+    document.querySelector("#exportCSV").classList.remove("disabled");
     actualDateInSecond = new Date().getTime() / 1000;
 });

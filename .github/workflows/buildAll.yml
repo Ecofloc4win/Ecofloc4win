@@ -1,0 +1,321 @@
+name: Build all
+run-name: ${{ github.actor }} is building all apps
+on:
+  push:
+    branches:
+      - release
+
+
+jobs:
+  create-release:
+    permissions: write-all
+    runs-on: ubuntu-latest
+    outputs:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+        - name: Create GitHub Release
+          id: create_release
+          uses: actions/create-release@v1
+          with:
+              tag_name: "release-${{ github.run_number }}"
+              release_name: "test release #${{ github.run_number }}"
+              draft: true
+              prerelease: false
+          env:
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
+  
+  build-vite-server-and-other:
+  
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    needs: create-release
+
+    steps:
+    - name: Checkout Ecofloc
+      uses: actions/checkout@v4
+      with:
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+    - name: Building vite-server
+      run: echo Now Building vite-server
+    - name: Install Node
+      uses: actions/setup-node@v4
+    - name: install pkg
+      run: npm install -g pkg
+    - name: build vite-server.exe
+      working-directory: ecofloc-UI
+      run: pkg start.js --targets node18-win-x64 --output ../vite-server.exe
+    - name: upload ui
+      uses: actions/upload-artifact@v4
+      with:
+        name: ui
+        path: Ecofloc-UI
+    - name: upload vite-server.exe
+      uses: actions/upload-artifact@v4
+      with:
+        name: vite-server
+        path: ./vite-server.exe
+    - name: upload images
+      uses: actions/upload-artifact@v4
+      with:
+        name: images
+        path: images
+    - name: upload InstallerScript.iss
+      uses: actions/upload-artifact@v4
+      with:
+        name: InstallerScript
+        path: ./InstallerScript.iss
+    - name: upload LICENSE
+      uses: actions/upload-artifact@v4
+      with:
+        name: LICENSE
+        path: ./LICENSE
+    - name: upload README
+      uses: actions/upload-artifact@v4
+      with:
+        name: README
+        path: ./README.md
+          
+  build-ecofloc4win:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    needs: create-release
+    
+    steps:
+      - name: Checkout Ecofloc
+        uses: actions/checkout@v4
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Building Ecofloc4win
+        working-directory: ecofloc-UI
+        run: echo Now Building ecofloc4win
+      - name: Seting up cl, msbuild, vcpkg (txui) and cuda
+        run: echo "Setting everything up"
+      - name: Installing cl compiler
+        uses: ilammy/msvc-dev-cmd@v1.4.1
+      - name: Installing msbuild
+        uses: microsoft/setup-msbuild@v2
+      - name: Installing additional packages
+        run: vcpkg install
+      - name: Installing CUDA
+        uses: Jimver/cuda-toolkit@v0.2.21
+        id: cuda-toolkit
+        with:
+          cuda: '11.7.0'
+          method: 'network'
+          non-cuda-sub-packages: '["libnvml"]'
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.405'
+      - name: Installing libreHardWareMonitor
+        run: msbuild /t:Restore .\ecofloc4win.sln
+      - name: Compiling Ecofloc4Win
+        run: msbuild /p:Configuration=Release .\ecofloc4win.sln
+      - name: upload ecofloc4win
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecofloc4win
+          path: ./x64/Release
+
+  build-PIDRecup:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    needs: create-release
+
+    steps:
+      - name: Checkout Ecofloc
+        uses: actions/checkout@v4
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Building PidRecup
+        run: echo Now Building ecofloc4win
+      - name: Installing cl compiler
+        uses: ilammy/msvc-dev-cmd@v1.4.1
+      - name: Installing msbuild
+        uses: microsoft/setup-msbuild@v2
+      - name: Compile PIDRecup
+        working-directory: PIDRecup/PIDRecup
+        run: msbuild /property:Configuration=Release .\PIDRecup.vcxproj
+      - name: upload PIDRecup
+        uses: actions/upload-artifact@v4
+        with:
+          name: PIDRecup
+          path: ./PIDRecup/PIDRecup/x64/Release
+        
+  build-EcoflocConfigurator:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    needs: create-release
+
+    steps:
+      - name: Checkout Ecofloc
+        uses: actions/checkout@v4
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.405'
+      - name: Installing msbuild
+        uses: microsoft/setup-msbuild@v2
+      - name: Config to use the correct .NET sdk
+        working-directory: EcoflocConfigurator
+        run: dotnet new globaljson --sdk-version 8.0.405
+      - name: Install dependencies
+        working-directory: EcoflocConfigurator
+        run: dotnet restore
+      - name: Compile EcoflocConfigurator
+        working-directory: EcoflocConfigurator
+        run: msbuild /property:Configuration=Release .\EcoflocConfigurator.csproj
+      - name: upload EcoflocConfigurator
+        uses: actions/upload-artifact@v4
+        with:
+          name: EcoflocConfigurator
+          path: ./EcoflocConfigurator/bin/Release/net8.0-windows
+
+  create-release-files:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    needs: [build-PIDRecup, build-ecofloc4win, build-vite-server-and-other, build-EcoflocConfigurator,create-release]
+
+    steps:
+      - name: Kek
+        run: echo "hello world"
+      - name: create Release dir
+        run: mkdir Release
+      - name: create ecofloc4win dir
+        run: mkdir ecofloc4win
+      - name: create ecofloc-UI dir in Release
+        working-directory: Release
+        run: mkdir ecofloc-UI
+        
+      - name: create ecofloc-Win dir in Release
+        working-directory: Release
+        run: mkdir ecofloc-Win
+      
+      - name: download ecofloc4win
+        uses: actions/download-artifact@v4
+        with:
+          path: ./ecofloc4win/
+          name: ecofloc4win
+      - name: download EcoflocConfigurator
+        uses: actions/download-artifact@v4
+        with:
+          path: ./ecofloc4win
+          name: EcoflocConfigurator
+      - name: copy ecofloc4win into Release
+        run: cp -r ./ecofloc4win/* ./Release/ecofloc-Win/
+      - name: download UI
+        uses: actions/download-artifact@v4
+        with:
+          path: ./Release/ecofloc-UI/
+          name: ui
+      - name: download vite-server
+        uses: actions/download-artifact@v4
+        with:
+          path: ./Release/
+          name: vite-server
+      - name: download PIDRecup
+        uses: actions/download-artifact@v4
+        with:
+          path: ./Release/ecofloc-UI/src/
+          name: PIDRecup
+
+      - name: create the true Release
+        run: mkdir Ecofloc && cd Ecofloc && mkdir ecofloc-UI && cp -r ../Release/ecofloc-UI/* ./ecofloc-UI/ && cp ../Release/vite-server.exe ./ && cp -r ../Release/ecofloc-Win/* ./
+          
+      - name: show directory
+        run: ls -Rla
+
+      - name: Zip ecofloc4win
+        uses: montudor/action-zip@v1
+        with:
+          args: zip -qq -r ecofloc4win.zip ecofloc4win
+      - name: Zip true Release
+        uses: montudor/action-zip@v1
+        with:
+          args: zip -qq -r Release.zip Ecofloc
+      - name: Upload installer Release
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: Release
+      - name: Upload ecofloc4win
+        uses: actions/upload-release-asset@v1
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+            upload_url: ${{ needs.create-release.outputs.upload_url }}
+            asset_path: ./ecofloc4win.zip
+            asset_name: ecofloc4win.zip
+            asset_content_type: application/zip
+      - name: Upload Release
+        uses: actions/upload-release-asset@v1
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+            upload_url: ${{ needs.create-release.outputs.upload_url }}
+            asset_path: ./Release.zip
+            asset_name: Release.zip
+            asset_content_type: application/zip
+
+  build-installer:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    needs: [create-release, create-release-files]
+
+    steps:
+      - name: download InstallerScript
+        uses: actions/download-artifact@v4
+        with:
+          name: InstallerScript
+      - name: download installer
+        uses: actions/download-artifact@v4
+        with:
+          name: installer
+      - name: download LICENSE
+        uses: actions/download-artifact@v4
+        with:
+          name: LICENSE
+      - name: download README
+        uses: actions/download-artifact@v4
+        with:
+          name: README
+      - name: create images directory
+        run: mkdir images
+      - name: download README
+        uses: actions/download-artifact@v4
+        with:
+          path: ./images/
+          name: images
+      - name: check directory
+        run: dir -Recurse
+      - name: Compile .ISS to .EXE Installer
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with:
+          path: ./InstallerScript.iss
+      - name: Upload Release
+        uses: actions/upload-release-asset@v1
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+            upload_url: ${{ needs.create-release.outputs.upload_url }}
+            asset_path: ./Output/ecofloc-installer.exe
+            asset_name: ecofloc-installer.exe
+            asset_content_type: application/exe
+
+      
+      

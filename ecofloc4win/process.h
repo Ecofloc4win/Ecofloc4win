@@ -1,6 +1,6 @@
 #pragma once
+
 #include <iostream>
-using namespace std;
 #include <vector>
 #include <string>
 #include <sstream>
@@ -8,41 +8,54 @@ using namespace std;
 
 class process
 {
-private:
-    string m_pid;
-    string m_name;
+    private:
 
-public:
-    /**
-	* @brief Constructor for the process class.
-    * 
-	* @param pid The process ID.
-	* @param name The process name.
-    */
-    process(string pid, string name);
+        /**
+        * @brief the pid of the process
+        */
+        std::string m_pid;
 
-	/**
-	* @brief Getter for the process ID.
-    * 
-	* @return string The process ID.
-    */
-    string getPid() const;
+        /**
+        * @brief the name of the process
+        */
+        std::string m_name;
 
-    /**
-	* @brief Getter for the process name.
-    * 
-	* @return string The process name.
-    */
-    string getName();
+    public:
 
-	/**
-	* @brief Setter for the process ID.
-    */
-    void setPid(string);
+        /**
+        * @brief Constructor for the process class.
+        * 
+        * @param pid The process ID.
+        * @param name The process name.
+        */
+        process(std::string pid, std::string name);
 
-	/**
-	* @brief Setter for the process name.
-    */ 
-    void setName(string);
+        /**
+        * @brief Getter for the process ID.
+        * 
+        * @return std::string The process ID.
+        */
+        std::string getPid() const;
+
+        /**
+        * @brief Getter for the process name.
+        * 
+        * @return std::string The process name.
+        */
+        std::string getName();
+
+        /**
+        * @brief Setter for the process ID.
+        *
+        * @param pid The process ID.
+        */
+        void setPid(std::string pid);
+
+        /**
+        * @brief Setter for the process name.
+        *
+        * @param name The process name.
+        */ 
+        void setName(std::string name);
 };
 

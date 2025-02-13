@@ -1,19 +1,27 @@
+/**
+ * @file MonitoringData.cpp
+ * @brief Definition of process management features.
+ * @author Ecofloc's Team
+ * @date 2025-02-03
+ */
+
 #include "MonitoringData.h"
+#include "Utils.h"
 
 #include <unordered_map>
 #include <stdexcept>
 
-ComponentType stringToComponentType(const std::string& str)
+/**
+ * @brief Returns the Component as an object based on a string
+ *
+ * @param str the name of the component wanted as a string
+ * @return ComponentType The component wanted as an object
+ * @throw std::invalid_argument If str is not CPU, GPU, SD or NIC
+ */
+Utils::ComponentType stringToComponentType(const std::string& str)
 {
-	static const std::unordered_map<std::string, ComponentType> componentMap = {
-		{ "CPU", ComponentType::h_CPU },
-		{ "GPU", ComponentType::h_GPU },
-		{ "SD", ComponentType::h_SD },
-		{ "NIC", ComponentType::h_NIC }
-	};
-
-	auto it = componentMap.find(str);
-	if (it != componentMap.end())
+	auto it = Utils::componentMap.find(str);
+	if (it != Utils::componentMap.end())
 	{
 		return it->second;
 	}
@@ -33,20 +41,20 @@ std::vector<int> MonitoringData::getPids() const
 
 void MonitoringData::enableComponent(const std::string& componentStr)
 {
-	ComponentType component = stringToComponentType(componentStr);
+	Utils::ComponentType component = stringToComponentType(componentStr);
 
 	switch (component)
 	{
-	case h_CPU:
+	case Utils::CPU:
 		cpuEnabled = true;
 		break;
-	case h_GPU:
+	case Utils::GPU:
 		gpuEnabled = true;
 		break;
-	case h_SD:
+	case Utils::SD:
 		sdEnabled = true;
 		break;
-	case h_NIC:
+	case Utils::NIC:
 		nicEnabled = true;
 		break;
 	}
@@ -54,42 +62,22 @@ void MonitoringData::enableComponent(const std::string& componentStr)
 
 void MonitoringData::disableComponent(const std::string& componentStr)
 {
-	ComponentType component = stringToComponentType(componentStr);
+	Utils::ComponentType component = stringToComponentType(componentStr);
 	switch (component)
 	{
-	case h_CPU:
+	case Utils::CPU:
 		cpuEnabled = false;
 		break;
-	case h_GPU:
+	case Utils::GPU:
 		gpuEnabled = false;
 		break;
-	case h_SD:
+	case Utils::SD:
 		sdEnabled = false;
 		break;
-	case h_NIC:
+	case Utils::NIC:
 		nicEnabled = false;
 		break;
 	}
-}
-
-void MonitoringData::setCPUEnabled(bool enabled)
-{
-	cpuEnabled = enabled;
-}
-
-void MonitoringData::setGPUEnabled(bool enabled)
-{
-	gpuEnabled = enabled;
-}
-
-void MonitoringData::setSDEnabled(bool enabled)
-{
-	sdEnabled = enabled;
-}
-
-void MonitoringData::setNICEnabled(bool enabled)
-{
-	nicEnabled = enabled;
 }
 
 bool MonitoringData::isCPUEnabled() const
@@ -112,24 +100,24 @@ bool MonitoringData::isNICEnabled() const
 	return nicEnabled;
 }
 
-void MonitoringData::setCPUEnergy(double energy)
+double MonitoringData::getCPUEnergy() const
 {
-	cpuEnergy = energy;
+	return cpuEnergy;
 }
 
-void MonitoringData::setGPUEnergy(double energy)
+double MonitoringData::getGPUEnergy() const
 {
-	gpuEnergy = energy;
+	return gpuEnergy;
 }
 
-void MonitoringData::setSDEnergy(double energy)
+double MonitoringData::getSDEnergy() const
 {
-	sdEnergy = energy;
+	return sdEnergy;
 }
 
-void MonitoringData::setNICEnergy(double energy)
+double MonitoringData::getNICEnergy() const
 {
-	nicEnergy = energy;
+	return nicEnergy;
 }
 
 void MonitoringData::updateCPUEnergy(double energy)

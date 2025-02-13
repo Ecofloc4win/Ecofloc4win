@@ -142,7 +142,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)vcpkg_installed\x64-windows\lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.7\lib\x64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ftxui-screen.lib;ftxui-dom.lib;ftxui-component.lib;tdh.lib;pdh.lib;iphlpapi.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ftxui-screen.lib;ftxui-dom.lib;ftxui-component.lib;tdh.lib;pdh.lib;iphlpapi.lib;ws2_32.lib;nvml.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
     <PreBuildEvent>
@@ -160,7 +160,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CPU.h" />
-    <ClInclude Include="gpu.h" />
+    <ClInclude Include="GPU.h" />
     <ClInclude Include="json.hpp" />
     <ClInclude Include="MonitoringData.h" />
     <ClInclude Include="process.h" />

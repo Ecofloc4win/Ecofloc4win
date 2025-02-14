@@ -48,6 +48,7 @@
 #include "ftxui/dom/node.hpp"
 #include "ftxui/screen/color.hpp"
 #include <unordered_set>
+#include "NIC.h"
 
 using namespace ftxui;
 
@@ -507,117 +508,9 @@ int main()
 		PdhCloseQuery(query);
 	});
 
-	std::thread nicThread([&screen]
-	{
-		std::vector<MonitoringData> localMonitoringData;
-		while (true)
-		{
-			// check if new_data is false and localMonitoringData is empty
-			if (newDataNic.load(std::memory_order_release) == false && localMonitoringData.empty())
-			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-				continue;
-			}
-
-			if (newDataNic)
-			{
-				std::unique_lock<std::mutex> lock(dataMutex);
-				localMonitoringData = monitoringData;
-				newDataNic.store(false, std::memory_order_release);
-			}
-
-			PMIB_TCPTABLE_OWNER_PID tcpTable = nullptr;
-			ULONG ulSize = 0;
-
-			// Get the size of the table
-			if (GetExtendedTcpTable(nullptr, &ulSize, TRUE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0) != ERROR_INSUFFICIENT_BUFFER) {
-				continue;
-			}
-
-			std::unique_ptr<BYTE[]> buffer(new BYTE[ulSize]);
-			tcpTable = reinterpret_cast<PMIB_TCPTABLE_OWNER_PID>(buffer.get());
-
-			// Get the table data
-			if (GetExtendedTcpTable(tcpTable, &ulSize, TRUE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0) != NO_ERROR) {
-				continue;
-			}
-
-			for (auto& data : localMonitoringData)
-			{
-				if (!data.isNICEnabled())
-				{
-					continue;
-				}
-
-				for (DWORD i = 0; i < tcpTable->dwNumEntries; i++)
-				{
-					// Loop inside the pid list of data
-					for (int& pid : data.getPids())
-					{
-						if (tcpTable->table[i].dwOwningPid == pid)
-						{
-							MIB_TCPROW_OWNER_PID row = tcpTable->table[i];
-
-							// Enable ESTATS for this connection
-							TCP_ESTATS_DATA_RW_v0 rwData = { 0 };
-							rwData.EnableCollection = TRUE;
-
-							if (SetPerTcpConnectionEStats(reinterpret_cast<PMIB_TCPROW>(&row), TcpConnectionEstatsData,
-								reinterpret_cast<PUCHAR>(&rwData), 0, sizeof(rwData), 0) != NO_ERROR)
-							{
-								continue;
-							}
-
-							if (row.dwState == MIB_TCP_STATE_ESTAB && row.dwRemoteAddr != htonl(INADDR_LOOPBACK))
-							{
-								ULONG rodSize = sizeof(TCP_ESTATS_DATA_ROD_v0);
-								std::vector<BYTE> rodBuffer(rodSize);
-								PTCP_ESTATS_DATA_ROD_v0 dataRod = reinterpret_cast<PTCP_ESTATS_DATA_ROD_v0>(rodBuffer.data());
-
-								// Get the ESTATS data for this connection
-								if (GetPerTcpConnectionEStats(reinterpret_cast<PMIB_TCPROW>(&row), TcpConnectionEstatsData,
-									nullptr, 0, 0, nullptr, 0, 0,
-									reinterpret_cast<PUCHAR>(dataRod), 0, rodSize) == NO_ERROR)
-								{
-
-									// Calculate Bytes In and Bytes Out
-									double bytesIn = static_cast<double>(dataRod->DataBytesIn);
-									double bytesOut = static_cast<double>(dataRod->DataBytesOut);
-
-									double intervalSec = interval / 1000.0; // Interval in seconds (will be chang� in the future)
-
-									long downloadRate = bytesIn / intervalSec;
-									long uploadRate = bytesOut / intervalSec;
-
-									double downloadPower = 1.138 * ((double)downloadRate / 300000); // 1.138 is the power consumption per byte for download (will be chang� in the future using the config)
-									double uploadPower = 1.138 * ((double)uploadRate / 300000); // 1.138 is the power consumption per byte for upload (will be chang� in the future using the config)
-
-									double averagePower = downloadPower + uploadPower;
-
-									{
-										std::lock_guard<std::mutex> lock(dataMutex);
-										// Update the NIC energy for the process
-										auto it = std::find_if(monitoringData.begin(), monitoringData.end(), [&](const MonitoringData& d)
-										{
-											return !d.getPids().empty();
-										});
-
-										if (it != monitoringData.end())
-										{
-											it->updateNICEnergy(averagePower);
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-
-			screen.Post(Event::Custom);
-			std::this_thread::sleep_for(std::chrono::milliseconds(interval)); // interval based on user input (will be chang� in the future)
-		}
-	});
+	// Usage example:
+	NetworkMonitoring::NICMonitor monitor(newDataNic, dataMutex, monitoringData, screen, interval);
+	std::thread nicThread([&monitor] { monitor.run(); });
 
 	std::thread cpuThread([&screen]
 	{

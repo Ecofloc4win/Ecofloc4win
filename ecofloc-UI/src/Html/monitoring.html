@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../Css/output.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inria+Sans:wght@300;400;700&family=Roboto:wght@100;300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+    <title>Monitoring Dashboard</title>
+</head>
+
+<body class="flex flex-col divide-y-4 divide-emerald-400 inria-sans-regular overflow-hidden">
+    <!-- Header -->
+    <header class="flex flex-row justify-center align-center bg-zinc-800 text-white text-xl">
+        <img class="w-16 h-auto absolute left-4" src="../image/EcoflocIcon.webp" alt="EcoflocIcon">
+        <div class="w-full px-[26%] flex flex-row justify-center content-center">
+            <a href="../">
+                <h2 class="titleHeader rounded-t transition duration-400 ease-in-out bg-zinc-800 hover:cursor-pointer text-center text-2xl font-semibold p-4">
+                    Home
+                </h2>
+            </a>
+            <a href="#">
+                <h2 class="text-emerald-600 titleHeader rounded-t transition duration-400 ease-in-out bg-zinc-800 hover:cursor-pointer text-center text-2xl font-semibold p-4">
+                    Monitoring
+                </h2>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col w-full bg-zinc-900 text-white">
+        <!-- Export Button -->
+        <div class="absolute left-4 top-24 z-10">
+            <button id="exportCSV" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded-full flex items-center gap-2 transition-colors duration-300 disabled" disabled>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </button>
+        </div>
+            
+        <!-- Graphs -->
+        <div id="flex-graph" class="list-graph h-3/4 flex-1">
+            <div id="boxCPU" class="graph">
+                <h3 class="text-center font-semibold">CPU</h3>
+                <div id="graphCPU" class="flex h-full"></div>
+            </div>
+            <div id="boxGPU" class="graph">
+                <h3 class="text-center font-semibold">GPU</h3>
+                <div id="graphGPU" class="flex h-full"></div>
+            </div>
+            <div id="boxNIC" class="graph">
+                <h3 class="text-center font-semibold">NIC</h3>
+                <div id="graphNIC" class="flex h-full"></div>
+            </div>
+            <div id="boxSD" class="graph">
+                <h3 class="text-center font-semibold">SD</h3>
+                <div id="graphSD" class="flex h-full"></div>
+            </div>
+            <div id="boxTOTAL" class="graph">
+                <h3 class="text-center font-semibold">Total Consumption</h3>
+                <div id="graphTOTAL" class="flex h-full"></div>
+            </div>
+            <div class="graph">
+                <h3 class="text-center font-semibold">RAM</h3>
+                <div class="flex flex-grow justify-center items-center h-[90%] bg-wip rounded-md">
+                    <p class="text-center font-bold bg-zinc-800 p-4 rounded-md fixed wip">Work in progress</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Options & Table -->
+        <section class="w-full flex h-1/4 gap-[.5em] my-[.5em] ">
+            <aside id="options">
+                <!-- Ipt-TimeStamp -->
+                <div id="input_ts" class="mt-4 sidebar-transition">
+                    <label class="block mb-2">Interval (ms)</label>
+                    <input type="number" min="500" value="1000" max="30000" step="250" class="w-full bg-zinc-700 text-white p-2 rounded-md">
+                </div>
+                <!-- Play/Stop buttons -->
+                <div id="list-buttons" class="sidebar-transition">
+                    <button id="start-button" onclick="executeScript(); return false;">
+                        <img src="../assets/play.svg" alt="play" class="size-[50px]">
+                    </button>
+                    <button id="stop-button" class="p-2" onclick="stopExecutable()">
+                        <img src="../assets/stop.svg" alt="stop" class="size-[50px]">
+                    </button>
+                </div>
+            </aside>
+            <div id="list-tab" class="w-full h-full flex flex-row justify-between bg-zinc-800 rounded-md p-2 px-2 gap-5">
+                <div id="process-tab" class="custom-table w-3/4">
+                <div class="custom-thead">
+                    <div class="col-1">
+                        Process name
+                        <input type="text" id="SearchBar" placeholder="Search..">
+                    </div>
+                    <div class="col-2">PID</div>
+                    <div>
+                        <button onclick="updateListPID()" placeholder="text" class="rotateOnClick">
+                            <img src="https://cdn-icons-png.flaticon.com/128/2805/2805355.png" alt="Refresh" title="Refresh" width="20" height="20" style="filter: brightness(0) invert(1);">
+                        </button>
+                    </div>
+                    <div>
+                        <input class="green-checkbox" type="checkbox" id="SelectAllProc">
+                    </div>
+                </div>
+                <div class="custom-tbody" id="ListeProcessus">
+                </div>
+                </div>
+                <div id="group-tab" class="custom-table w-1/4">
+                <div class="custom-thead col-3">
+                    <div>Group Application</div>
+                </div>
+                <div class="custom-tbody" id="TableFilter">
+                    <div class="line col-3">
+                        <div>All</div>
+                        <input type="checkbox" id="AllFilter" value="All">
+                    </div>
+                    <div class="line col-3">
+                        <div>OfficeApplication</div>
+                        <input type="checkbox" id="OfficeApplicationFilter" value="Office">
+                    </div>
+                    <div class="line col-3">
+                        <div>Browser</div>
+                        <input type="checkbox" id="NavigateurFilter" value="Browser">
+                    </div>
+                    <div class="line col-3">
+                        <div>Other</div>
+                        <input type="checkbox" id="OtherFilter" value="Other">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    </main>
+    <!-- Script -->
+    <script>
+        document.querySelector('.rotateOnClick').addEventListener('click', function() {
+        this.classList.add('activeRotation');
+        this.addEventListener('animationend', () => {
+            this.classList.remove('activeRotation');
+        });
+        });
+        const max_screen_height = "max-h-[" + window.innerHeight + "px]";
+        const min_screen_height = "min-h-[" + window.innerHeight + "px]";
+        document.body.classList.add(max_screen_height);
+        document.body.classList.add(min_screen_height);
+
+
+        const startButton = document.querySelector("#start-button");
+        const stopButton = document.querySelector("#stop-button");
+
+
+        function executeScript() {
+        const serverUrl = 'http://localhost:3030/execute';
+        fetch(serverUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({}),
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error(`Data error :`, data.message);
+                    alert(`Error : ${data.message}`);
+                }
+            })
+            .catch(error => {
+                console.error('Network or server error :', error);
+                alert('Unable to contact the server.');
+            });
+        }
+
+        function stopExecutable() {
+            fetch('http://localhost:3030/stop', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        function updateListPID(){
+            fetch('http://localhost:3030/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+        updateListPID();
+
+        function executeScript() {
+            fetch('http://localhost:3030/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        function stopExecutable() {
+            fetch('http://localhost:3030/stop', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+    </script>
+    <script src="../Js/mapperApplication.js" type="module"></script>
+    <script src="../Js/ClassApplication.js" type="module"></script>
+    <script src="../Js/process-filter.js" type="module"></script>
+    <script src="../Js/ClassDynamicGraph.js" type="module"></script>
+    <script src="../Js/affichage-graphique.js" type="module"></script>
+    <script src="../Js/toCsv.js" type="module"></script>
+</body>
+
+</html>

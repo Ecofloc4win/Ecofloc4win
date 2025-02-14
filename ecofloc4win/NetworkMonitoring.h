@@ -17,9 +17,10 @@
 
 using namespace ftxui;
 
-
-namespace NetworkMonitoring {
-    class NICMonitor {
+namespace NetworkMonitoring
+{
+    class NICMonitor
+    {
     private:
         std::atomic<bool>& newDataNic;
         std::mutex& dataMutex;
@@ -28,11 +29,13 @@ namespace NetworkMonitoring {
         int interval;
         std::vector<MonitoringData> localMonitoringData;
 
-        struct TCPTableWrapper {
+        struct TCPTableWrapper
+        {
             std::unique_ptr<BYTE[]> buffer;
             PMIB_TCPTABLE_OWNER_PID tcpTable;
 
-            bool initialize() {
+            bool initialize()
+            {
                 ULONG ulSize = 0;
                 if (GetExtendedTcpTable(nullptr, &ulSize, TRUE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0) != ERROR_INSUFFICIENT_BUFFER) {
                     return false;
@@ -42,8 +45,10 @@ namespace NetworkMonitoring {
                 return GetExtendedTcpTable(tcpTable, &ulSize, TRUE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0) == NO_ERROR;
             }
         };
-        void processConnection(const MIB_TCPROW_OWNER_PID& row) {
-            if (row.dwState != MIB_TCP_STATE_ESTAB || row.dwRemoteAddr == htonl(INADDR_LOOPBACK)) {
+        void processConnection(const MIB_TCPROW_OWNER_PID& row)
+        {
+            if (row.dwState != MIB_TCP_STATE_ESTAB || row.dwRemoteAddr == htonl(INADDR_LOOPBACK))
+            {
                 return;
             }
 
@@ -58,7 +63,8 @@ namespace NetworkMonitoring {
             TCP_ESTATS_DATA_RW_v0 rwData = { 0 };
             rwData.EnableCollection = TRUE;
             if (SetPerTcpConnectionEStats(&tcpRow, TcpConnectionEstatsData,
-                reinterpret_cast<PUCHAR>(&rwData), 0, sizeof(rwData), 0) != NO_ERROR) {
+                reinterpret_cast<PUCHAR>(&rwData), 0, sizeof(rwData), 0) != NO_ERROR)
+            {
                 return;
             }
 
@@ -68,12 +74,14 @@ namespace NetworkMonitoring {
 
             if (GetPerTcpConnectionEStats(&tcpRow, TcpConnectionEstatsData,
                 nullptr, 0, 0, nullptr, 0, 0,
-                reinterpret_cast<PUCHAR>(dataRod), 0, rodSize) == NO_ERROR) {
+                reinterpret_cast<PUCHAR>(dataRod), 0, rodSize) == NO_ERROR)
+            {
                 updateEnergyMetrics(dataRod);
             }
         }
 
-        void updateEnergyMetrics(PTCP_ESTATS_DATA_ROD_v0 dataRod) {
+        void updateEnergyMetrics(PTCP_ESTATS_DATA_ROD_v0 dataRod)
+        {
             double bytesIn = static_cast<double>(dataRod->DataBytesIn);
             double bytesOut = static_cast<double>(dataRod->DataBytesOut);
             double intervalSec = interval / 1000.0;
@@ -90,35 +98,44 @@ namespace NetworkMonitoring {
             auto it = std::find_if(monitoringData.begin(), monitoringData.end(),
                 [](const MonitoringData& d) { return !d.getPids().empty(); });
 
-            if (it != monitoringData.end()) {
+            if (it != monitoringData.end())
+            {
                 it->updateNICEnergy(averagePower);
             }
         }
 
-        void processMonitoringData() {
-            if (newDataNic.load(std::memory_order_release)) {
+        void processMonitoringData()
+        {
+            if (newDataNic.load(std::memory_order_release))
+            {
                 std::unique_lock<std::mutex> lock(dataMutex);
                 localMonitoringData = monitoringData;
                 newDataNic.store(false, std::memory_order_release);
             }
 
-            if (localMonitoringData.empty()) {
+            if (localMonitoringData.empty())
+            {
                 return;
             }
 
             TCPTableWrapper tcpWrapper;
-            if (!tcpWrapper.initialize()) {
+            if (!tcpWrapper.initialize())
+            {
                 return;
             }
 
             for (const auto& data : localMonitoringData) {
-                if (!data.isNICEnabled()) {
+                if (!data.isNICEnabled())
+                {
                     continue;
                 }
 
-                for (DWORD i = 0; i < tcpWrapper.tcpTable->dwNumEntries; i++) {
-                    for (const int& pid : data.getPids()) {
-                        if (tcpWrapper.tcpTable->table[i].dwOwningPid == pid) {
+                for (DWORD i = 0; i < tcpWrapper.tcpTable->dwNumEntries; i++)
+                {
+                    for (const int& pid : data.getPids())
+                    {
+                        if (tcpWrapper.tcpTable->table[i].dwOwningPid == pid)
+                        {
                             processConnection(tcpWrapper.tcpTable->table[i]);
                         }
                     }
@@ -130,11 +147,14 @@ namespace NetworkMonitoring {
         NICMonitor(std::atomic<bool>& newDataFlag, std::mutex& mutex,
             std::vector<MonitoringData>& data, ScreenInteractive& scr, int intervalMs)
             : newDataNic(newDataFlag), dataMutex(mutex), monitoringData(data),
-            screen(scr), interval(intervalMs) {
+            screen(scr), interval(intervalMs)
+        {
         }
 
-        void run() {
-            while (true) {
+        void run()
+        {
+            while (true)
+            {
                 processMonitoringData();
                 screen.Post(Event::Custom);
 

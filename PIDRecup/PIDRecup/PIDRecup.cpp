@@ -140,19 +140,13 @@ std::vector<std::vector<std::string>> getDiffProcesses(std::vector<std::string>&
     std::set_difference(list1.begin(), list1.end(), list2.begin(), list2.end(),std::inserter(diffTemp1, diffTemp1.begin()));
     std::set_difference(list2.begin(), list2.end(), list1.begin(), list1.end(),std::inserter(diffTemp2, diffTemp2.begin()));
 
-    std::cout << "Programme différent : " << std::endl << std::endl;
-
     for (int i = 0; i < diffTemp1.size(); i++) {
-        std::cout << "Retirer : " << diffTemp1[i] << std::endl;
         output[1].push_back(diffTemp1[i]);
     }
 
     for (int i = 0; i < diffTemp2.size(); i++) {
-        std::cout << "Ajout : " << diffTemp2[i] << std::endl;
         output[0].push_back(diffTemp2[i]);
     }
-
-    std::cout << std::endl;
 
     return output;
 }
@@ -285,17 +279,12 @@ json updateJson(json input, std::vector<std::pair<std::string, std::vector<int>>
                 //Quand le nom des processus correspond à des processus checker
                 for (int k = 0; k < input[i]["pids"].size(); k++) {
                     if (std::find(listChecked[j].second.begin(), listChecked[j].second.end(), input[i]["pids"][k]["numeroPid"]) != listChecked[j].second.end()) {
-                        std::cout << "Nom groupe (newJSON) : " << input[i]["name"] << std::endl;
-                        std::cout << "Nom groupe (listCheck) : " << listChecked[j].first << std::endl;
-                        std::cout << "NumeroPid (newJSON) : " << input[i]["pids"][k]["numeroPid"] << std::endl;
-                        std::cout << "NumPid (listCheck) : " << listChecked[j].second[0] << std::endl;
                         input[i]["pids"][k]["checked"] = true;
                     }
                 }
             }
         } 
     }
-    std::cout << "Coucou je suis là";
     return input;
 }
 
@@ -374,6 +363,5 @@ int main(int argc, char* argv[])
             file.close();
         }
     }
-    std::cout << "Json File Generated: " << filename << std::endl;
     return 0;
 }

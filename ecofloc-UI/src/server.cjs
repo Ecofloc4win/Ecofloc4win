@@ -239,18 +239,21 @@ app.post('/updateProcessListState', (req, res) => {
 app.post('/changePidState', (req, res) => {
     const { processName, pid, state } = req.body;
     const data = fileUtils.readJSON(PATHS.processJson);
-    
     if (data) {
         data.forEach(process => {
             if (process.name === processName) {
                 process.pids.forEach(pidInfo => {
-                    if (pidInfo.numeroPid === pid) {
+                    if (pidInfo.numeroPid == pid) {
                         pidInfo.checked = state;
                     }
                 });
             }
         });
         fileUtils.writeJSON(PATHS.processJson, data);
+    }else 
+    {
+        console.error("JSON File impossible to open");
+        return;
     }
     
     res.json({ success: true, message: 'PID state updated' });

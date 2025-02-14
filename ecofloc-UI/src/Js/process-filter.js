@@ -111,7 +111,7 @@ function getFilterCategorie(nomCategorie)
     return otherFilterElement.checked;
 }
 
-function changePidState(nomProc, pidProc, etat) 
+function changePidState(processName, pid, state) 
 {
     const serverUrl = 'http://localhost:3030/changePidState';
     fetch(serverUrl, {
@@ -119,7 +119,7 @@ function changePidState(nomProc, pidProc, etat)
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ nomProc, pidProc, etat }),
+        body: JSON.stringify({ processName, pid, state }),
     })
         .then(response => response.json())
         .then(data => {

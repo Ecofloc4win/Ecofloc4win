@@ -53,9 +53,9 @@ const
   EnvironmentKey = 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment'; // To get the path to the... well Path
   RequiredDotNetVersion = '8.0.10'; // Version of .NET Desktop Runtime Required to execute EcoflocConfigurator.exe
   // Below all the possible url for each versions of a CPU
-  DotNetInstallerURL64 = 'https://download.visualstudio.microsoft.com/download/pr/f398d462-9d4e-4b9c-abd3-86c54262869a/4a8e3a10ca0a9903a989578140ef0499/windowsdesktop-runtime-8.0.10-win-x64.exe'; // Replace with the actual URL
-  DotNetInstallerURL86 = 'https://download.visualstudio.microsoft.com/download/pr/9836a475-66af-47eb-a726-8046c47ce6d5/ccb7d60db407a6d022a856852ef9e763/windowsdesktop-runtime-8.0.10-win-x86.exe';
-  DotNetInstallerURLArm64 = 'https://download.visualstudio.microsoft.com/download/pr/c1387fab-1960-4cdc-8653-1e0333f6385a/3bd819d5f2aecff94803006a9e2c945a/windowsdesktop-runtime-8.0.10-win-arm64.exe';
+  DotNetInstallerURL64 = 'https://download.visualstudio.microsoft.com/download/pr/f1e7ffc8-c278-4339-b460-517420724524/f36bb75b2e86a52338c4d3a90f8dac9b/windowsdesktop-runtime-8.0.12-win-x64.exe'; // Replace with the actual URL
+  DotNetInstallerURL86 = 'https://download.visualstudio.microsoft.com/download/pr/acf6e5d3-1e2f-4072-833c-fa84a10841c5/acd48342207247f404a5aaa58d1a1ea1/windowsdesktop-runtime-8.0.12-win-x86.exe';
+  DotNetInstallerURLArm64 = 'https://download.visualstudio.microsoft.com/download/pr/87fb3e9d-aeac-4081-877f-bebee255590e/91660fdf05cd58d1dbecaa3b7f604159/windowsdesktop-runtime-8.0.12-win-arm64.exe';
 
 function ProcArchi(): String;
 begin

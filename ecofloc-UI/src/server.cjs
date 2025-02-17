@@ -1,3 +1,4 @@
+const { getCheckedPIDs, launchMonitoring } = require("./Js/Utils.cjs");
 const express = require('express');
 const { exec } = require('child_process');
 const cors = require('cors');
@@ -5,20 +6,20 @@ const fs = require('fs');
 const path = require('path');
 
 // Server configuration
-const app = express();
+const APP = express();
 const PORT = 3030;
 const PATHS = {
-    processJson: './Json/process.json',
-    systemMonitoring: './Json/system_monitoring.json',
-    generator: path.join(__dirname, 'Generator.exe'),
-    configurator: path.join(__dirname, '..', '..', 'EcoflocConfigurator.exe'),
-    pidRecup: path.join(__dirname, 'PIDRecup.exe')
+    PROCESS_JSON: './Json/process.json',
+    METRICS_DIRECTORY: path.join(__dirname, 'Json/'),
+    MONITORING: path.join(__dirname, 'Ecofloc4Win.exe'),
+    CONFIGURATOR: path.join(__dirname, '..', '..', 'EcoflocConfigurator.exe'),
+    PID_RECUP: path.join(__dirname, 'PIDRecup.exe')
 };
 
 // Process state management
-let currentProcess = null;
-let processRunning = false;
-let configuratorRunning = false;
+let IS_PROCESS_RUNNING = false;
+let IS_CONFIGURATOR_RUNNING = false;
+global.STOPPING = false;
 
 // File system utilities
 const fileUtils = {
@@ -41,12 +42,25 @@ const fileUtils = {
         }
     },
 
-    resetMonitoringFile: () => {
-        // Only reset if the file doesn't exist or is empty
-        if (!fs.existsSync(PATHS.systemMonitoring) || 
-            fs.statSync(PATHS.systemMonitoring).size === 0) {
-            fileUtils.writeJSON(PATHS.systemMonitoring, { apps: [] });
-        }
+    resetMonitoringFiles: (pids) => {
+        pids.forEach(pid => {
+            const filePath = path.join(PATHS.METRICS_DIRECTORY, `${pid}.json`);
+            if (!fs.existsSync(filePath) || fs.statSync(filePath).size === 0) {
+                fileUtils.writeJSON(filePath, {
+                    apps: [
+                        {
+                            pid: pid,
+                            power_w_CPU: 0,
+                            power_w_GPU: 0,
+                            power_w_NIC: 0,
+                            power_w_SD: 0,
+                            color: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')
+                        }
+                    ],
+                    time: Math.floor(Date.now() / 1000)
+                });
+            }
+        });
     },
 
     exportToCSV: (graphData) => {
@@ -102,33 +116,82 @@ const fileUtils = {
     }
 };
 
+// Au début du fichier, ajoutons une map pour suivre les processus
+const monitoringProcesses = new Map();
+
 // Process management utilities
 const processUtils = {
-    cleanup: () => {
-        if (currentProcess) {
+    cleanup: async () => {
+        global.STOPPING = true;
+
+        // Utiliser tasklist pour obtenir les PIDs
+        const { stdout } = await new Promise((resolve, reject) => {
+            exec('tasklist /FI "IMAGENAME eq Ecofloc4Win.exe" /FO CSV /NH', (error, stdout, stderr) => {
+                if (error) reject(error);
+                else resolve({ stdout, stderr });
+            });
+        });
+
+        // Extraire les PIDs
+        const pids = stdout.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.startsWith('"Ecofloc4Win.exe"'))
+            .map(line => line.split(',')[1].replace(/"/g, '').trim());
+
+        // Tuer chaque processus individuellement
+        for (const pid of pids) {
             try {
-                process.kill(currentProcess.pid, 0);
-                process.kill(currentProcess.pid);
+                await new Promise((resolve, reject) => {
+                    exec(`taskkill /F /PID ${pid}`, (error) => {
+                        if (error) console.error(`Error killing PID ${pid}:`, error);
+                        resolve();
+                    });
+                });
             } catch (error) {
-                if (error.code !== 'ESRCH') {
-                    console.error('Error during process cleanup:', error);
-                }
-            } finally {
-                currentProcess = null;
-                processRunning = false;
+                console.error(`Failed to kill process ${pid}:`, error);
             }
         }
-        processRunning = false;
+
+        // Nettoyer la map des processus
+        if (global.monitoringProcesses) {
+            global.monitoringProcesses.clear();
+        }
+
+        // Supprimer les fichiers JSON
+        try {
+            const files = fs.readdirSync(PATHS.METRICS_DIRECTORY);
+            files.forEach(file => {
+                if (file.endsWith('.json') && file !== 'process.json') {
+                    const filePath = path.join(PATHS.METRICS_DIRECTORY, file);
+                    fs.unlinkSync(filePath);
+                }
+            });
+        } catch (error) {
+            console.error('Error cleaning JSON files:', error);
+        }
+
+        IS_PROCESS_RUNNING = false;
+        global.STOPPING = false;
     },
 
-    killProcess: (pid, callback) => {
-        exec(`taskkill /PID ${pid} /T /F`, callback);
+    killProcess: (pid) => {
+        if (global.monitoringProcesses && global.monitoringProcesses.has(pid)) {
+            const processes = global.monitoringProcesses.get(pid);
+            processes.forEach(proc => {
+                try {
+                    exec(`taskkill /F /T /PID ${proc.pid}`);
+                } catch (error) {
+                    console.error(`Error killing process for PID ${pid}:`, error);
+                }
+            });
+            global.monitoringProcesses.delete(pid);
+        }
     }
 };
 
 // Initialize server
-app.use(cors());
-app.use(express.json());
+APP.use(cors());
+APP.use(express.json());
 
 // Set working directory
 const srcPath = path.resolve('./ecofloc-UI/src');
@@ -144,67 +207,69 @@ process.on('SIGINT', processUtils.cleanup);
 process.on('SIGTERM', processUtils.cleanup);
 
 // API endpoints
-app.post('/execute', (req, res) => {
-    if (processRunning) {
+APP.post('/execute', async (req, res) => {
+    if (IS_PROCESS_RUNNING) {
         return res.status(400).json({ success: false, message: 'Process already running' });
     }
 
     try {
-        processUtils.cleanup();
-        fileUtils.resetMonitoringFile();
-
-        currentProcess = exec(`"${PATHS.generator}" ${PATHS.systemMonitoring}`);
+        // S'assurer que le nettoyage est terminé avant de continuer
+        await processUtils.cleanup();
         
-        currentProcess.on('error', (error) => {
-            console.error(`Process error: ${error.message}`);
-            processUtils.cleanup();
-            res.status(500).json({ success: false, message: 'Process error occurred' });
-        });
+        // Réinitialiser le flag d'arrêt
+        global.STOPPING = false;
+        
+        const pidsToExecute = await getCheckedPIDs();
+        
+        if (!pidsToExecute || pidsToExecute.length === 0) {
+            return res.status(400).json({ success: false, message: 'No PIDs selected for monitoring' });
+        }
 
-        currentProcess.on('exit', (code, signal) => {
-            console.log(`Process exited with code ${code} and signal ${signal}`);
-            processUtils.cleanup();
-        });
+        // Réinitialiser les fichiers de monitoring
+        fileUtils.resetMonitoringFiles(pidsToExecute);
 
-        processRunning = true;
-        res.json({ success: true});
+        // Utiliser un intervalle par défaut de 1000ms si non spécifié
+        const interval = req.body.interval || 1000;
+
+        // Lancer les processus de monitoring
+        const processes = pidsToExecute.map(pid => 
+            launchMonitoring(pid, PATHS.MONITORING, PATHS.METRICS_DIRECTORY, interval)
+        );
+
+        if (processes.some(p => p === null)) {
+            throw new Error('Failed to start one or more monitoring processes');
+        }
+
+        IS_PROCESS_RUNNING = true;
+        res.json({ success: true });
     } catch (error) {
         console.error(`Unexpected error: ${error.message}`);
-        processUtils.cleanup();
+        await processUtils.cleanup();
         res.status(500).json({ success: false, message: 'Error launching process' });
     }
 });
 
-app.post('/stop', (req, res) => {
-    if (!processRunning || !currentProcess) {
-        return res.status(400).json({ success: false, message: 'No process running' });
-    }
-
+APP.post('/stop', (req, res) => {
     try {
-        processUtils.killProcess(currentProcess.pid, (error) => {
-            if (error) {
-                console.error('Error killing process:', error);
-                res.status(500).json({ success: false, message: 'Error stopping process' });
-            } else {
-                processUtils.cleanup();
-                res.json({ success: true });
-            }
-        });
-    } catch (error) {
-        console.error(`Error stopping process: ${error.message}`);
         processUtils.cleanup();
-        res.status(500).json({ success: false, message: 'Error stopping process' });
+        res.json({ success: true, message: 'All monitoring processes stopped and files cleaned' });
+    } catch (error) {
+        console.error(`Error stopping processes: ${error.message}`);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error stopping processes and cleaning files' 
+        });
     }
 });
 
-app.post('/configurator', (req, res) => {
-    if (configuratorRunning) {
+APP.post('/configurator', (req, res) => {
+    if (IS_CONFIGURATOR_RUNNING) {
         return res.status(400).json({ success: false, message: 'Configurator already running' });
     }
 
     try {
-        exec(`"${PATHS.configurator}"`, (error) => {
-            configuratorRunning = false;
+        exec(`"${PATHS.CONFIGURATOR}"`, (error) => {
+            IS_CONFIGURATOR_RUNNING = false;
             if (error) {
                 console.error(`Execution error: ${error.message}`);
                 return res.status(500).json({ success: false, message: 'Error launching configurator' });
@@ -212,17 +277,17 @@ app.post('/configurator', (req, res) => {
             res.json({ success: true, message: 'Configurator launched successfully' });
         });
 
-        configuratorRunning = true;
+        IS_CONFIGURATOR_RUNNING = true;
     } catch (error) {
         console.error(`Unexpected error: ${error.message}`);
-        configuratorRunning = false;
+        IS_CONFIGURATOR_RUNNING = false;
         res.status(500).json({ success: false, message: 'Error launching configurator' });
     }
 });
 
-app.post('/updateProcessListState', (req, res) => {
+APP.post('/updateProcessListState', (req, res) => {
     const { list, state } = req.body;
-    const data = fileUtils.readJSON(PATHS.processJson);
+    const data = fileUtils.readJSON(PATHS.PROCESS_JSON);
     
     if (data) {
         data.forEach(process => {
@@ -230,15 +295,15 @@ app.post('/updateProcessListState', (req, res) => {
                 process.pids.forEach(pidInfo => pidInfo.checked = state);
             }
         });
-        fileUtils.writeJSON(PATHS.processJson, data);
+        fileUtils.writeJSON(PATHS.PROCESS_JSON, data);
     }
     
     res.json({ success: true, message: 'Process list updated', list });
 });
 
-app.post('/changePidState', (req, res) => {
+APP.post('/changePidState', (req, res) => {
     const { processName, pid, state } = req.body;
-    const data = fileUtils.readJSON(PATHS.processJson);
+    const data = fileUtils.readJSON(PATHS.PROCESS_JSON);
     if (data) {
         data.forEach(process => {
             if (process.name === processName) {
@@ -249,7 +314,7 @@ app.post('/changePidState', (req, res) => {
                 });
             }
         });
-        fileUtils.writeJSON(PATHS.processJson, data);
+        fileUtils.writeJSON(PATHS.PROCESS_JSON, data);
     }else 
     {
         console.error("JSON File impossible to open");
@@ -259,11 +324,11 @@ app.post('/changePidState', (req, res) => {
     res.json({ success: true, message: 'PID state updated' });
 });
 
-app.post('/changeListePidState', (req, res) => {
+APP.post('/changeListePidState', (req, res) => {
     const { list, state } = req.body;
     console.log('Length receive :', list.length);
     console.log('state :', state);
-    const data = fileUtils.readJSON(PATHS.processJson);
+    const data = fileUtils.readJSON(PATHS.PROCESS_JSON);
     if (data) {
         data.forEach(process => {
             if (list.includes(process.name)) {
@@ -272,14 +337,14 @@ app.post('/changeListePidState', (req, res) => {
                 });
             }
         });
-        fileUtils.writeJSON(PATHS.processJson, data);
+        fileUtils.writeJSON(PATHS.PROCESS_JSON, data);
     }
     
     console.log('Valeur modifiée avec succès.');
     res.json({ message: 'Liste reçue avec succès', receivedList: list });
 });
 
-app.get('/events', (req, res) => {
+APP.get('/events', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -316,7 +381,7 @@ app.get('/events', (req, res) => {
     });
 });
 
-app.post('/export-csv', (req, res) => {
+APP.post('/export-csv', (req, res) => {
     try {
         const graphData = req.body;
         
@@ -339,11 +404,11 @@ app.post('/export-csv', (req, res) => {
     }
 });
 
-app.post('/update', (req, res) => {
+APP.post('/update', (req, res) => {
     try {
-        const command = `"${PATHS.pidRecup}" ${PATHS.processJson}`;
+        const command = `"${PATHS.PID_RECUP}" ${PATHS.PROCESS_JSON}`;
         const process = exec(command, (error, stdout, stderr) => {
-            configuratorRunning = false;
+            IS_CONFIGURATOR_RUNNING = false;
             if (error) {
                 console.error(`Error of execution : ${error.message}`);
                 return;
@@ -358,13 +423,64 @@ app.post('/update', (req, res) => {
         
     } catch (error) {
         console.error(`Unexpected error : ${error.message}`);
-        configuratorRunning = false;
+        IS_CONFIGURATOR_RUNNING = false;
         return res.status(500).json({ success: false, message: 'Error during the update' });
     }
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    fileUtils.resetMonitoringFile();
+APP.get('/process-data', (req, res) => {
+    try {
+        const data = fileUtils.readJSON(PATHS.PROCESS_JSON);
+        if (!data) {
+            return res.status(404).json({ error: 'No process data found' });
+        }
+        res.json(data);
+    } catch (error) {
+        console.error('Error reading process data:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
+
+APP.get('/monitored-pids', (req, res) => {
+    try {
+        const files = fs.readdirSync(PATHS.METRICS_DIRECTORY);
+        const pids = files
+            .filter(file => file.endsWith('.json'))
+            .map(file => file.replace('.json', ''));
+        res.json(pids);
+    } catch (error) {
+        console.error('Error reading monitored PIDs:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+APP.get('/metrics/:pid', (req, res) => {
+    try {
+        const filePath = path.join(PATHS.METRICS_DIRECTORY, `${req.params.pid}.json`);
+        const data = fileUtils.readJSON(filePath);
+        if (!data) {
+            return res.status(404).json({ error: 'No metrics found for this PID' });
+        }
+        res.json(data);
+    } catch (error) {
+        console.error('Error reading metrics:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Start server
+APP.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    
+    if (!fs.existsSync(PATHS.MONITORING)) {
+        console.error(`Ecofloc4Win.exe not found at ${PATHS.MONITORING}`);
+        process.exit(1);
+    }
+    
+    if (!fs.existsSync(PATHS.METRICS_DIRECTORY)) {
+        fs.mkdirSync(PATHS.METRICS_DIRECTORY, { recursive: true });
+    }
+    
+    fileUtils.resetMonitoringFiles([]);
+});
+

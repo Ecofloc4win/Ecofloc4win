@@ -1,1 +1,5 @@
-{"tdp":15,"clockSpeed":23,"voltage":4}
+{
+  "tdp": 65.0,
+  "clockSpeed": 4600.0,
+  "voltage" :  1.5
+}

@@ -35,5 +35,6 @@
   "dependencies": {
     "punycode": "^2.3.1",
     "vitest": "^3.0.4"
-  }
+  },
+  "main": "src/Js/graph-display.js"
 }

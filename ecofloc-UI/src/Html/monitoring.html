@@ -78,15 +78,18 @@
                 <!-- Ipt-TimeStamp -->
                 <div id="input_ts" class="mt-4 sidebar-transition">
                     <label class="block mb-2">Interval (ms)</label>
-                    <input type="number" min="500" value="1000" max="30000" step="250" class="w-full bg-zinc-700 text-white p-2 rounded-md">
+                    <input id="intervalTime" type="number" min="500" value="1000" max="30000" step="250" class="w-full !bg-zinc-700 text-white p-2 rounded-md focus:!bg-zinc-700 hover:!bg-zinc-700">
                 </div>
                 <!-- Play/Stop buttons -->
                 <div id="list-buttons" class="sidebar-transition">
-                    <button id="start-button" onclick="executeScript(); return false;">
-                        <img src="../assets/play.svg" alt="play" class="size-[50px]">
+                    <button id="start-button" class="p-2">
+                        <img src="../assets/play.svg" alt="play" class="w-12 h-12">
                     </button>
-                    <button id="stop-button" class="p-2" onclick="stopExecutable()">
-                        <img src="../assets/stop.svg" alt="stop" class="size-[50px]">
+                    <button id="stop-button" class="p-2">
+                        <img src="../assets/stop.svg" alt="stop" class="w-12 h-12">
+                    </button>
+                    <button id="clear-button" class="p-2" disabled>
+                        <img src="../assets/reset.png" alt="clear" class="w-10 h-10 mt-1">
                     </button>
                 </div>
             </aside>
@@ -137,61 +140,25 @@
     </section>
     </main>
     <!-- Script -->
+    <script src="../Js/mapperApplication.js" type="module"></script>
+    <script src="../Js/ClassApplication.js" type="module"></script>
+    <script src="../Js/process-filter.js" type="module"></script>
+    <script src="../Js/ClassDynamicGraph.js" type="module"></script>
+    <script src="../Js/graph-display.js" type="module"></script>
+    <script src="../Js/toCsv.js" type="module"></script>
     <script>
         document.querySelector('.rotateOnClick').addEventListener('click', function() {
-        this.classList.add('activeRotation');
-        this.addEventListener('animationend', () => {
-            this.classList.remove('activeRotation');
-        });
+            this.classList.add('activeRotation');
+            this.addEventListener('animationend', () => {
+                this.classList.remove('activeRotation');
+            });
         });
         const max_screen_height = "max-h-[" + window.innerHeight + "px]";
         const min_screen_height = "min-h-[" + window.innerHeight + "px]";
         document.body.classList.add(max_screen_height);
         document.body.classList.add(min_screen_height);
 
-
-        const startButton = document.querySelector("#start-button");
-        const stopButton = document.querySelector("#stop-button");
-
-
-        function executeScript() {
-        const serverUrl = 'http://localhost:3030/execute';
-        fetch(serverUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({}),
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (!data.success) {
-                    console.error(`Data error :`, data.message);
-                    alert(`Error : ${data.message}`);
-                }
-            })
-            .catch(error => {
-                console.error('Network or server error :', error);
-                alert('Unable to contact the server.');
-            });
-        }
-
-        function stopExecutable() {
-            fetch('http://localhost:3030/stop', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-                .then(response => response.json())
-                .then(data => {
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-        }
-
-        function updateListPID(){
+        function updateListPID() {
             fetch('http://localhost:3030/update', {
                 method: 'POST',
                 headers: {
@@ -206,43 +173,7 @@
                 });
         }
         updateListPID();
-
-        function executeScript() {
-            fetch('http://localhost:3030/execute', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-                .then(response => response.json())
-                .then(data => {
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-        }
-
-        function stopExecutable() {
-            fetch('http://localhost:3030/stop', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-                .then(response => response.json())
-                .then(data => {
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-        }
     </script>
-    <script src="../Js/mapperApplication.js" type="module"></script>
-    <script src="../Js/ClassApplication.js" type="module"></script>
-    <script src="../Js/process-filter.js" type="module"></script>
-    <script src="../Js/ClassDynamicGraph.js" type="module"></script>
-    <script src="../Js/affichage-graphique.js" type="module"></script>
-    <script src="../Js/toCsv.js" type="module"></script>
 </body>
 
 </html>

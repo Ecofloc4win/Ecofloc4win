@@ -6,16 +6,22 @@
 #include <csignal>
 #include "json.hpp"
 #include <mutex>
+#include <condition_variable>
 
 using json = nlohmann::json;
 using namespace std;
+
+// Global variables
+bool STOP_MONITORING = false;
+std::mutex MUTEX;
+std::condition_variable CV;
 
 volatile bool stop = false;
 mutex fileMutex;
 
 void handleSignal(int signal) {
     if (signal == SIGINT || signal == SIGTERM) {
-        stop = true;
+        STOP_MONITORING = true;
     }
 }
 
@@ -79,16 +85,15 @@ void updateJsonFile(const string& filename, int pid, bool updateCPU, bool update
     outFile.close();
 }
 
-// Fonction exécutée dans le thread
-void daemonThread(string filename, int pid, int interval, bool updateCPU, bool updateGPU, bool updateNIC, bool updateSD) {
-    while (!stop) {
+// Function executed in monitoring thread
+void monitoringThread(string filename, int pid, int interval, bool updateCPU, bool updateGPU, bool updateNIC, bool updateSD) {
+    while (!STOP_MONITORING) {
         updateJsonFile(filename, pid, updateCPU, updateGPU, updateNIC, updateSD);
         this_thread::sleep_for(chrono::milliseconds(interval));
     }
 }
 
 int main(int argc, char* argv[]) {
-
     bool updateCPU = false, updateGPU = false, updateNIC = false, updateSD = false;
     int pid = 0, interval = 1000;
     string filename;
@@ -105,22 +110,26 @@ int main(int argc, char* argv[]) {
     }
 
     if (pid == 0 || filename.empty()) {
-        cerr << "Erreur : PID ou fichier non spécifié." << endl;
+        cerr << "Erreur : PID ou fichier non spÃ©cifiÃ©." << endl;
         return 1;
     }
 
     signal(SIGINT, handleSignal);
     signal(SIGTERM, handleSignal);
 
-    // Lancement du daemon avec std::thread
-    thread daemon([=]() 
-    { 
-            daemonThread(filename, pid, interval, updateCPU, updateGPU, updateNIC, updateSD); 
+    // CrÃ©er le thread sans le dÃ©tacher
+    thread daemon([=]() { 
+        monitoringThread(filename, pid, interval, updateCPU, updateGPU, updateNIC, updateSD); 
     });
-    daemon.detach();
 
-    while (!stop) {
-        this_thread::sleep_for(chrono::seconds(1));
+    // Attendre que le signal d'arrÃªt soit reÃ§u
+    while (!STOP_MONITORING) {
+        this_thread::sleep_for(chrono::milliseconds(100));
+    }
+
+    // Attendre que le thread se termine proprement
+    if (daemon.joinable()) {
+        daemon.join();
     }
 
     return 0;

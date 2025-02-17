@@ -1,18 +1,41 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import DynamicGraph from '../Js/ClassDynamicGraph';
-
-global.Plotly = {
-    newPlot: vi.fn(),
-    addTraces: vi.fn(),
-    update: vi.fn()
-};
+import DynamicGraph from '../Js/ClassDynamicGraph.js';
 
 describe('DynamicGraph', () => {
     let graph;
-
+    
     beforeEach(() => {
-        graph = new DynamicGraph('graphDiv'); 
-        vi.clearAllMocks();
+        // Mock Plotly global object
+        global.Plotly = {
+            newPlot: vi.fn(),
+            addTraces: vi.fn(),
+            update: vi.fn()
+        };
+        
+        graph = new DynamicGraph('testGraph');
+    });
+
+    it('should initialize with correct default values', () => {
+        expect(graph.DATA).toEqual({});
+        expect(graph.TRACE_INDICES).toEqual({});
+        expect(graph.GRAPH_NAME).toBe('testGraph');
+    });
+
+    it('should update plot with new data', () => {
+        graph.updatePlot(123, 50, 10, '#fff');
+        
+        expect(graph.DATA[123]).toBeDefined();
+        expect(graph.DATA[123].x).toContain(10);
+        expect(graph.DATA[123].y).toContain(50);
+        expect(graph.DATA[123].line.color).toBe('#fff');
+    });
+
+    it('should clear all data', () => {
+        graph.updatePlot(123, 50, 10, '#fff');
+        graph.clearData();
+        
+        expect(graph.DATA).toEqual({});
+        expect(graph.TRACE_INDICES).toEqual({});
     });
 
     it('add a trace for a new PID', () => {

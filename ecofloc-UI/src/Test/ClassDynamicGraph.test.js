@@ -41,15 +41,15 @@ describe('DynamicGraph', () => {
     it('add a trace for a new PID', () => {
         // GIVEN
         const PID = '123';
-        const initialTraces = Object.keys(graph.traceIndices).length;
+        const initialTraces = Object.keys(graph.TRACE_INDICES).length;
 
         // WHEN
         graph.updatePlot(PID, 10, 1, 'blue');
 
         // THEN
-        expect(Object.keys(graph.traceIndices).length).toBe(initialTraces + 1);
-        expect(graph.data[PID].y[0]).toBe(10);
-        expect(graph.traceIndices[PID]).toBe(0);
+        expect(Object.keys(graph.TRACE_INDICES).length).toBe(initialTraces + 1);
+        expect(graph.DATA[PID].y[0]).toBe(10);
+        expect(graph.TRACE_INDICES[PID]).toBe(0);
         expect(Plotly.addTraces).toHaveBeenCalledTimes(1);
     });
 
@@ -62,9 +62,9 @@ describe('DynamicGraph', () => {
         graph.updatePlot(PID, value, 1, 'green');
 
         // THEN
-        expect(graph.data[PID].y[0]).toBe(value);
-        expect(Object.keys(graph.traceIndices).length).toBe(1);
-        expect(graph.traceIndices[PID]).toBe(0);
+        expect(graph.DATA[PID].y[0]).toBe(value);
+        expect(Object.keys(graph.TRACE_INDICES).length).toBe(1);
+        expect(graph.TRACE_INDICES[PID]).toBe(0);
         expect(Plotly.addTraces).toHaveBeenCalledTimes(1);
     });
 
@@ -77,7 +77,7 @@ describe('DynamicGraph', () => {
         graph.updatePlot(PID, 30, 2, 'red');
 
         // THEN
-        expect(graph.data[PID].y).toEqual([20, 30]);
+        expect(graph.DATA[PID].y).toEqual([20, 30]);
     });
 
     it('random color generation', () => {

@@ -157,38 +157,12 @@ void enable(const std::string& lineNumber, const std::string& component);
 void disable(const std::string& lineNumber, const std::string& component);
 
 /**
- * @brief Gets the localized counter path for a given process name and counter name to be used in PDH functions
- * 		  and avoid hardcoding the counter path for each language.
- *
- * @param processName The name of the process
- * @param counterName The name of the counter
- * @return wstring the localized counter path for the process
- */
-std::wstring getLocalizedCounterPath(const std::wstring& processName, const std::string& counterName);
-
-/**
  * @brief Retrieves the name of the Process thank to its ID
  *
  * @param processID The ID of the Process
  * @return wstring the name of the Process
  */
 std::wstring getProcessNameByPID(DWORD processID);
-
-/**
- * @brief Gets the index of a counter in the registry based on its name.
- *
- * @param counterName The name of the counter
- * @return DWORD the Index of the counter
- */
-DWORD getCounterIndex(const std::string& counterName);
-
-/**
- * @brief Gets the name of the instance for a given process ID.
- * 
- * @param targetPID The pid
- * @return wstring the name of the instance
- */
-std::wstring getInstanceForPID(int targetPID);
 
 /**
  * @brief Generates all rows of the table to show in the terminal
@@ -658,7 +632,6 @@ void addProcName(const std::string& name, const std::string& component)
 		std::cerr << "Error: No processes found with name " << name << "." << std::endl;
 	}
 }
-
 
 void removeProcByLineNumber(const std::string& lineNumber) noexcept
 {

@@ -1,5 +1,7 @@
 #pragma once
 
+#define NOMINMAX
+
 #include <vector>
 #include <string>
 #include <windows.h>
@@ -26,35 +28,7 @@ namespace GPUMonitoring
         int interval;
         std::vector<MonitoringData> localMonitoringData;
 
-        void processMonitoringData()
-        {
-            if (newData.load(std::memory_order_release))
-            {
-                std::unique_lock<std::mutex> lock(dataMutex);
-                localMonitoringData = monitoringData;
-                newData.store(false, std::memory_order_release);
-            }
-            for (const auto& data : localMonitoringData)
-            {
-                if (!data.isGPUEnabled() || data.getPids().empty())
-                {
-                    continue;
-                }
-                int gpuJoules = GPU::getGPUJoules(data.getPids(), interval);
-                {
-                    std::lock_guard<std::mutex> lock(dataMutex);
-                    auto it = std::find_if(monitoringData.begin(), monitoringData.end(),
-                        [&](const auto& d)
-                        {
-                            return d.getPids() == data.getPids();
-                        });
-                    if (it != monitoringData.end())
-                    {
-                        it->updateGPUEnergy(gpuJoules);
-                    }
-                }
-            }
-        }
+        void processMonitoringData();
 
     public:
         GPUMonitor(std::atomic<bool>& newDataFlag, std::mutex& mutex,
@@ -68,15 +42,7 @@ namespace GPUMonitoring
 
         }
 
-        void run() {
-            while (true) {
-                processMonitoringData();
-                screen.Post(Event::Custom);
-
-                // Reduce CPU usage by adding a small delay
-                std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-            }
-        }
+        void run();
     };
 };
 

@@ -1,23 +1,21 @@
 #pragma once
 
+#define NOMINMAX
+
 #include <vector>
 #include <string>
 #include <windows.h>
 #include <atomic>
 #include <mutex>
-
 #include "MonitoringData.h"
 #include "CPU.h"
-
 #include "ftxui/component/screen_interactive.hpp"
 #include "ftxui/component/component.hpp"
 
 using namespace ftxui;
 
-namespace CPUMonitoring
-{
-    class CPUMonitor
-    {
+namespace CPUMonitoring {
+    class CPUMonitor {
     private:
         std::atomic<bool>& newData;
         std::mutex& dataMutex;
@@ -26,86 +24,35 @@ namespace CPUMonitoring
         int interval;
         std::vector<MonitoringData> localMonitoringData;
 
+        struct PowerMeasurement {
+            double startPower;
+            double endPower;
+            double average() const { return (startPower + endPower) / 2; }
+        };
 
+        struct TimeSnapshot {
+            uint64_t cpuTime;
+            uint64_t pidTime;
+        };
 
-        void processMonitoringData() {
-			double totalEnergy = 0.0;
-			double startTotalPower = 0.0;
-			double endTotalPower = 0.0;
-			double avgPowerInterval = 0.0;
+        void updateLocalData();
 
-			if (newData)
-			{
-				std::unique_lock<std::mutex> lock(dataMutex);
-				localMonitoringData = monitoringData;
-				newData.store(false, std::memory_order_release);
-			}
+        PowerMeasurement measurePowerOverInterval();
 
-			// Process each monitoring data entry
-			for (auto& data : localMonitoringData)
-			{
-				if (!data.isCPUEnabled())
-				{
-					continue;
-				}
+        TimeSnapshot takeTimeSnapshot(const int pid);
 
-				// Ensure the PID list is not empty
-				if (data.getPids().empty())
-				{
-					std::cerr << "Error: No PIDs available for monitoring data." << std::endl;
-					continue;
-				}
+        bool validateTimeDifference(const TimeSnapshot& start, const TimeSnapshot& end);
 
-				// Get initial CPU and process times
-				uint64_t startCPUTime = CPU::getCPUTime();
-				uint64_t startPidTime = CPU::getPidTime(data.getPids()[0]);
+        double calculateCPUUsage(const TimeSnapshot& start, const TimeSnapshot& end);
 
-				CPU::getCurrentPower(startTotalPower);
+        double calculateIntervalEnergy(double powerAvg, double cpuUsage);
 
-				// Monitor for the specified interval
-				std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+        void updateMonitoringDataEnergy(const std::vector<int>& pids, double energy);
 
-				CPU::getCurrentPower(endTotalPower);
+        bool isValidMonitoringData(const MonitoringData& data);
 
-				avgPowerInterval = (startTotalPower + endTotalPower) / 2;
+        void processMonitoringData();
 
-				uint64_t endCPUTime = CPU::getCPUTime();
-				uint64_t endPidTime = CPU::getPidTime(data.getPids()[0]);
-
-				// Calculate time differences
-				double pidTimeDiff = static_cast<double>(endPidTime) - static_cast<double>(startPidTime);
-				double cpuTimeDiff = static_cast<double>(endCPUTime) - static_cast<double>(startCPUTime);
-
-				// Validate time differences
-				if (pidTimeDiff > cpuTimeDiff)
-				{
-					std::cerr << "Error: Process time is greater than CPU time." << std::endl;
-					continue;
-				}
-
-				// Calculate CPU usage and energy consumption
-				double cpuUsage = (pidTimeDiff / cpuTimeDiff);
-				double intervalEnergy = avgPowerInterval * cpuUsage * interval / 1000;
-
-				totalEnergy += intervalEnergy;
-
-				// Update monitoring data safely
-				{
-					std::lock_guard<std::mutex> lock(dataMutex);
-					auto it = std::find_if(monitoringData.begin(), monitoringData.end(),
-						[&](const auto& d)
-						{
-							return d.getPids() == data.getPids();
-						});
-
-					if (it != monitoringData.end())
-					{
-						it->updateCPUEnergy(totalEnergy);
-					}
-				}
-			}
-        }
-        
     public:
         CPUMonitor(std::atomic<bool>& newDataFlag, std::mutex& mutex,
             std::vector<MonitoringData>& data, ScreenInteractive& scr, int intervalMs)
@@ -114,19 +61,8 @@ namespace CPUMonitoring
         {
         }
 
-        ~CPUMonitor() {
+        ~CPUMonitor() = default;
 
-        }
-
-        void run() {
-            while (true) {
-                processMonitoringData();
-                screen.Post(Event::Custom);
-
-                // Reduce CPU usage by adding a small delay
-                std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-            }
-        }
+        void run();
     };
-};
-
+}

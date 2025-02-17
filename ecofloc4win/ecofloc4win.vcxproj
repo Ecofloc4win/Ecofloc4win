@@ -152,18 +152,26 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CPU.cpp" />
+    <ClCompile Include="CPUMonitoring.cpp" />
     <ClCompile Include="ecofloc4win.cpp" />
     <ClCompile Include="gpu.cpp" />
+    <ClCompile Include="GPUMonitoring.cpp" />
     <ClCompile Include="MonitoringData.cpp" />
+    <ClCompile Include="NetworkMonitoring.cpp" />
     <ClCompile Include="process.cpp" />
+    <ClCompile Include="StorageMonitoring.cpp" />
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CPU.h" />
+    <ClInclude Include="CPUMonitoring.h" />
     <ClInclude Include="GPU.h" />
+    <ClInclude Include="GPUMonitoring.h" />
     <ClInclude Include="json.hpp" />
     <ClInclude Include="MonitoringData.h" />
+    <ClInclude Include="NetworkMonitoring.h" />
     <ClInclude Include="process.h" />
+    <ClInclude Include="StorageMonitoring.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

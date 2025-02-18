@@ -1,7 +1,32 @@
+/**
+ * @file faststart.js
+ * @brief Script to automate server and development environment startup.
+ *
+ * This script executes multiple commands sequentially to start the Node.js server,
+ * the Vite development server, and open the browser automatically.
+ * @author Ecofloc's Team
+ * @lastupdate 2025-02-18
+ */
+
+/**
+ * @var {Object} exec
+ * @brief Module to execute shell commands.
+ */
 const { exec } = require('child_process');
+
+/**
+ * @var {Object} readline
+ * @brief Module to handle user input in the terminal.
+ */
 const readline = require('readline');
 
-// Function to execute a command as a promise
+/**
+ * @brief Executes a shell command as a promise.
+ * @function runCommand
+ * @param {string} command The command to execute.
+ * @param {string} description Description of the process.
+ * @return {Promise<void>} Resolves when the command completes, rejects on error.
+ */
 function runCommand(command, description) {
   return new Promise((resolve, reject) => {
     console.log(`Starting: ${description}`);
@@ -26,7 +51,11 @@ function runCommand(command, description) {
   });
 }
 
-// Main function to execute steps sequentially
+/**
+ * @brief Main function to execute startup steps sequentially.
+ * @function main
+ * @return {Promise<void>} Resolves when all steps are completed.
+ */
 async function main() {
   try {
     // Step 1: Start the Node.js server
@@ -37,8 +66,6 @@ async function main() {
 
     // Step 3: Open the browser
     await runCommand('start http://localhost:5173/src/', 'Open Browser');
-
-
   } catch (err) {
     console.error('An error occurred during execution:', err.message);
   } finally {

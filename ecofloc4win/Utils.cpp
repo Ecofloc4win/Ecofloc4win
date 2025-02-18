@@ -11,10 +11,6 @@
 #include <Windows.h>
 #include <iostream>
 
-/**
- * @namespace Utils
- * @brief Namespace for useful functionalities.
- */
 namespace Utils
 {
 	std::unordered_map<std::string, ComponentType> componentMap =

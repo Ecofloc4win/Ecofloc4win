@@ -1,18 +1,56 @@
+/**
+ * @file processFilter.js
+ * @brief This file contains JavaScript code for filtering and managing process data in a web application.
+ *        It fetches process data from a server, handles filtering and state changes of processes,
+ *        and updates the user interface dynamically based on user input.
+ * @author Ecofloc's Team
+ * @lastupdate 2025-02-18
+ */
+
 import { areSetsEqual } from './areSetsEqual';
 import MapperApplication from './mapperApplication';
 
+/**
+ * @var {HTMLElement} listProcessHtmlElement
+ * @brief The DOM element that holds the list of processes.
+ */
 const listProcessHtmlElement = document.getElementById("ListeProcessus");
+
+/**
+ * @var {HTMLElement} tableFilterHtmlElement
+ * @brief The DOM element that holds the filter options.
+ */
 const tableFilterHtmlElement = document.getElementById("TableFilter");
+
+/**
+ * @var {HTMLElement} checkBoxSelectAllProcElement
+ * @brief The checkbox element to select all processes.
+ */
 const checkBoxSelectAllProcElement = document.getElementById("SelectAllProc");
 
+/**
+ * @var {Array} myProcesses
+ * @brief An array containing all the processes to be displayed.
+ */
 let myProcesses = [];
-let setCategorie = new Set();
 
+/**
+ * @var {Set} setCategory
+ * @brief A set containing the categories used for filtering.
+ */
+let setCategory = new Set();
 
+/**
+ * @function makeGroupApplication
+ * @brief Creates filter checkboxes for each category and manages the filtering logic.
+ * 
+ * This function dynamically generates a group of checkboxes based on the categories of processes.
+ * It listens for changes to the checkboxes to filter the process list accordingly.
+ */
 function makeGroupApplication(){
     if(tableFilterHtmlElement) {
         tableFilterHtmlElement.innerHTML = '';
-        for (const item of setCategorie) {
+        for (const item of setCategory) {
             const lineDiv = document.createElement('div');
             lineDiv.classList.add('line', 'col-3');
 
@@ -61,24 +99,32 @@ function makeGroupApplication(){
     }
 }
 
+/**
+ * @function parseDataToMyProcesses
+ * @brief Parses the fetched JSON data and updates the process list.
+ * @param {Object} data - The JSON data fetched from the server.
+ * 
+ * This function processes the data and updates the `myProcesses` array and the `setCategory` set.
+ * It also calls `makeGroupApplication` if categories have changed.
+ */
 function parseDataToMyProcesses(data)
 {
     if(data)
     {
         myProcesses = [];
-        const oldCategorie = setCategorie;
-        setCategorie = new Set();
-        setCategorie.add("All");
-        setCategorie.add("Other");
+        const oldCategory = setCategory;
+        setCategory = new Set();
+        setCategory.add("All");
+        setCategory.add("Other");
         myProcesses = MapperApplication.mapperApplicationsFromJson(data);
         for(let aProcess of myProcesses)
         {
-            if(aProcess.categorie != "") 
+            if(aProcess.setCategory != "") 
             {
-                setCategorie.add(aProcess.categorie);
+                setCategory.add(aProcess.setCategory);
             }
         }
-        if(!areSetsEqual(oldCategorie, setCategorie)) {
+        if(!areSetsEqual(oldCategory, setCategory)) {
             makeGroupApplication();
         }
         showProcessList();
@@ -100,10 +146,16 @@ fetch('../Json/process.json')
     console.error('Error:', error);
 });
 
-function getFilterCategorie(nomCategorie) 
+/**
+ * @function getFilterCategory
+ * @brief Checks whether a category filter is selected.
+ * @param {string} nameCategory - The name of the category to check.
+ * @return {boolean} Returns true if the category filter is checked, false otherwise.
+ */
+function getFilterCategory(nameCategory) 
 {
     for(let filter of tableFilterHtmlElement.querySelectorAll("input")){
-        if(filter.value == nomCategorie){
+        if(filter.value == nameCategory){
             return filter.checked;
         }
     }
@@ -111,7 +163,16 @@ function getFilterCategorie(nomCategorie)
     return otherFilterElement.checked;
 }
 
-function changePidState(nomProc, pidProc, etat) 
+/**
+ * @function changePidState
+ * @brief Changes the state of a process identified by its PID.
+ * @param {string} nameProc - The name of the process.
+ * @param {number} pidProc - The PID of the process.
+ * @param {boolean} state - The new state of the process (checked or unchecked).
+ * 
+ * This function sends a request to the server to update the state of the process with the given PID.
+ */
+function changePidState(nameProc, pidProc, state) 
 {
     const serverUrl = 'http://localhost:3030/changePidState';
     fetch(serverUrl, {
@@ -119,7 +180,7 @@ function changePidState(nomProc, pidProc, etat)
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ nomProc, pidProc, etat }),
+        body: JSON.stringify({ nameProc, pidProc, state }),
     })
         .then(response => response.json())
         .then(data => {
@@ -134,8 +195,13 @@ function changePidState(nomProc, pidProc, etat)
         });
 }
 
-
-
+/**
+ * @function showProcessList
+ * @brief Displays the list of processes according to the selected filters.
+ * 
+ * This function dynamically generates the list of processes, filtering by search text and selected categories.
+ * It updates the `selectAllProcElement` checkbox based on the state of individual process checkboxes.
+ */
 function showProcessList() 
 {
     while (listProcessHtmlElement.firstChild) 
@@ -151,7 +217,7 @@ function showProcessList()
         {
             continue;
         }
-        if(getFilterCategorie(unProcessus.categorie))
+        if(getFilterCategory(unProcessus.categorie))
         {
             for(let unPid of unProcessus.getListePid())
             {
@@ -201,6 +267,13 @@ function showProcessList()
     checkBoxSelectAllProcElement.indeterminate = (!allChecked && atLeastOneChecked); 
 }
 
+/**
+ * @function selectAllPid
+ * @brief Selects or deselects all PIDs based on the given state.
+ * @param {boolean} etat - The state to set for all PIDs (true for checked, false for unchecked).
+ * 
+ * This function updates the state of all PIDs visible in the process list and sends the update to the server.
+ */
 function selectAllPid(etat) 
 {
     const searchText = document.getElementById("SearchBar").value.toLowerCase();
@@ -213,7 +286,7 @@ function selectAllPid(etat)
         {
             continue;
         }
-        if(!getFilterCategorie(unProcessus.categorie)) 
+        if(!getFilterCategory(unProcessus.categorie)) 
         {
             continue;
         }
@@ -253,14 +326,14 @@ function selectAllPid(etat)
     });
 }
 
-// Update the checkbox event listener
+// Event listener for the "Select All" checkbox to trigger the selectAllPid function.
 checkBoxSelectAllProcElement.addEventListener("change", (event) => {
     const checked = event.target.checked;
     selectAllPid(checked);
 });
 
+// Event source to listen for server events and update the process list.
 const eventSource = new EventSource('http://localhost:3030/events');
-
 eventSource.onmessage = (event) => {
     try {        
         if (event.data[0] === "[")
@@ -281,6 +354,7 @@ eventSource.onmessage = (event) => {
     }
 };
 
+// Event listener for the "Search Bar" input to filter the process list based on user input.
 document.getElementById("SearchBar").addEventListener("keyup", () => {
     showProcessList();
 });

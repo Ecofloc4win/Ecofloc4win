@@ -30,21 +30,15 @@ typedef float* (*get_cpu_cores_power_func)(int* size);
  */
 typedef bool (*get_is_intel_cpu_func)();
 
-/**
- * @namespace CPU
- * @brief Namespace for CPU-related functionalities.
- */
 namespace CPU
 {
-    /**
-     * @brief Give the capacitance of the cpu.
-     *
-     * @return double The CPU capacitance. -1.0 on failure.
-     */
-    double getCapacitance() {
-        try {
+    double getCapacitance()
+    {
+        try
+        {
             std::ifstream f("../Config/cpu.json");
-            if (!f.is_open()) {
+            if (!f.is_open())
+            {
                 throw std::runtime_error("Could not open ../Config/cpu.json, make sure it exists");
             }
             json cpu_data = json::parse(f);
@@ -57,7 +51,8 @@ namespace CPU
 
             return capacitance;
         }
-        catch (const std::exception& e) {
+        catch (const std::exception& e)
+        {
             std::cerr << "Error reading capacitance data: " << e.what() << std::endl;
             return -1.0;
         }

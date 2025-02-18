@@ -13,10 +13,10 @@
 
 /**
  * @brief Returns the Component as an object based on a string
- *
- * @param str the name of the component wanted as a string
- * @return ComponentType The component wanted as an object
- * @throw std::invalid_argument If str is not CPU, GPU, SD or NIC
+ * @function stringToComponentType
+ * @param {std::string} str - the name of the component wanted as a string
+ * @returns {Utilis::ComponentType} The component wanted as an object
+ * @throws {std::invalid_argument} If str is not CPU, GPU, SD or NIC
  */
 Utils::ComponentType stringToComponentType(const std::string& str)
 {

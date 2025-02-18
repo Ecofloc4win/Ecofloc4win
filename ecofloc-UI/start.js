@@ -1,7 +1,32 @@
+/**
+ * @file start.js
+ * @brief Script to automate server and development environment startup.
+ *
+ * This script installs necessary packages, starts the Node.js backend,
+ * launches the Vite development server, and opens the application in a browser.
+ * @author Ecofloc's Team
+ * @lastupdate 2025-02-18
+ */
+
+/**
+ * @var {Object} exec
+ * @brief Child process execution module.
+ */
 const { exec } = require('child_process');
+
+/**
+ * @var {Object} readline
+ * @brief Readline module for keeping terminal open.
+ */
 const readline = require('readline');
 
-// Function to execute a command as a promise
+/**
+ * @brief Executes a shell command as a promise.
+ * @function runCommand
+ * @param {string} command The shell command to execute.
+ * @param {string} description A description of the command for logging.
+ * @returns {Promise<void>} Resolves when the command completes, rejects on error.
+ */
 function runCommand(command, description) {
   return new Promise((resolve, reject) => {
     console.log(`Starting: ${description}`);
@@ -26,7 +51,11 @@ function runCommand(command, description) {
   });
 }
 
-// Main function to execute steps sequentially
+/**
+ * @brief Main function to execute startup steps sequentially.
+ * @function main
+ * @returns {Promise<void>}
+ */
 async function main() {
   try {
     // Step 1: Install/update packages

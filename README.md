@@ -45,6 +45,27 @@ EcoflocConfigurator.exe requires .NET desktop runtime applications version 8.0.1
 
 ---
 
+## Developpement Guide
+
+1. **Install the dependencies**
+   - Ensure you have Node.js and npm installed for the Web-UI. Download them from [Node.js](https://nodejs.org/).
+   - Install the .NET SDK 8.0.405 (version 8.0.12). Download it from [Microsoft .NET](https://dotnet.microsoft.com/).
+   - Install [CUDA Toolkit ](https://developer.nvidia.com/cuda-11-7-1-download-archive?target_os=Windows&target_arch=x86_64&target_version=10) v11.7
+2. **Clone the source code**
+   - Clone the repository with `git clone https://github.com/ecofloc4win/ecofloc4win.git` or on the github page click on Code and Download ZIP then extract wherever you want
+3. **Install Visual Studio**
+   - Download [Visual Studio Installer](https://visualstudio.microsoft.com)
+   - Using Visual Studio Installer install whatever version of Visual Studio you want.
+   - Check and install both "Desktop development with C++" and ".NET desktop"
+4. **Install necessary packages**
+   - open a terminal in the folder where the source code is and install all VCPKG with `vcpkg install`
+5. **Open the solution**
+   - Open through Visual Studio or directly on the file `ecofloc4win.sln`
+5. **Done!**
+   - You should now be ready to work on Ecofloc4Win
+
+---
+
 ## Installation Guide
 
 Follow these steps to install **EcoFloc4Win**:

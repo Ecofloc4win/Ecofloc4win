@@ -41,7 +41,7 @@ To use our software you **MUST** have administrator rights.
 
 **EcoFloc4Win** requires Windows 10 or above for the base applications.
 The Web-UI requires node and npm.
-EcoflocConfigurator.exe requires .NET desktop runtime applications version 8.0.10.
+EcoflocConfigurator.exe requires .NET desktop runtime applications version 8.0.12.
 
 ---
 
@@ -49,13 +49,28 @@ EcoflocConfigurator.exe requires .NET desktop runtime applications version 8.0.1
 
 Follow these steps to install **EcoFloc4Win**:
 
+### **Option 1**
+
 1. **Download the installer**: 
-   - Go to the latest release from [GitHub](...).
+   - Go to the latest release from [GitHub](github.com/Ecofloc4win/Ecofloc4win/releases/latest) and download ecofloc-installer.exe.
+2. **Execute the installer**
+   - Execute the installer from where you downloaded it
+3. **Configure the install**
+   - Agree to the license and read the README if you haven't already.
+   - Choose the install path
+   - Choose which component you would like.
+   - The dependencies will automatically be installed alongside Ecofloc
+
+### **Option 2**
+
+1. **Download the Release**
+   - Go to the latest release from [GitHub](github.com/Ecofloc4win/Ecofloc4win/releases/latest) and download Release.zip .
 2. **Install prerequisites**:
    - Ensure you have Node.js and npm installed for the Web-UI. Download them from [Node.js](https://nodejs.org/).
-   - Install the .NET Desktop Runtime (version 8.0.10). Download it from [Microsoft .NET](https://dotnet.microsoft.com/).
-3. **Run the installer**:
-   - Execute `EcoFloc4Win-Installer.exe` and follow the on-screen instructions.
+   - Install the .NET Desktop Runtime (version 8.0.12). Download it from [Microsoft .NET](https://dotnet.microsoft.com/).
+3. **Run the app**:
+   - Execute `ecofloc4win.exe` for the terminal version
+   - Execute `vite-server.exe` for the Web-UI
 
 ---
 

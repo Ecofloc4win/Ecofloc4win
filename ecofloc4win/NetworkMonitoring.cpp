@@ -100,13 +100,30 @@ void NetworkMonitoring::NICMonitor::processMonitoringData()
 
 void NetworkMonitoring::NICMonitor::run()
 {
-    while (true)
-    {
-        processMonitoringData();
-        screen.Post(Event::Custom);
 
-        // Reduce CPU usage by adding a small delay
-        std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+    switch (this->timeout)
+    {
+    case -1:
+        while (true)
+        {
+            processMonitoringData();
+            screen.Post(Event::Custom);
+        }
+        break;
+    case 0:
+        while (true)
+        {
+            processMonitoringData();
+        }
+        break;
+    default:
+        int iterations = (this->timeout * 1000) / interval;
+        while (iterations > 0)
+        {
+            processMonitoringData();
+            iterations--;
+        }
+        break;
     }
 }
 

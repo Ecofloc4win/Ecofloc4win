@@ -106,6 +106,7 @@ namespace StorageMonitoring {
 		std::vector<MonitoringData> localMonitoringData;
         ScreenInteractive& screen;
         int interval;
+        int timeout;
         PDH_HQUERY query;
         std::map<std::wstring, std::pair<PDH_HCOUNTER, PDH_HCOUNTER>> processCounters;
 
@@ -121,9 +122,20 @@ namespace StorageMonitoring {
 
     public:
         SDMonitor(std::atomic<bool>& newDataFlag, std::mutex& mutex,
-            std::vector<MonitoringData>& data, ScreenInteractive& scr, int intervalMs)
+        std::vector<MonitoringData>& data, ScreenInteractive& scr, int intervalMs)
+        : newDataSd(newDataFlag), dataMutex(mutex), monitoringData(data),
+        screen(scr), interval(intervalMs), timeout(-1)
+        {
+            if (!initializeQuery()) {
+                throw std::runtime_error("Failed to open PDH query.");
+            }
+        }
+
+        SDMonitor(std::atomic<bool>& newDataFlag, std::mutex& mutex,
+            std::vector<MonitoringData>& data, ScreenInteractive& scr, int intervalMs, int timeout)
             : newDataSd(newDataFlag), dataMutex(mutex), monitoringData(data),
-            screen(scr), interval(intervalMs) {
+            screen(scr), interval(intervalMs), timeout(timeout)
+        {
             if (!initializeQuery()) {
                 throw std::runtime_error("Failed to open PDH query.");
             }

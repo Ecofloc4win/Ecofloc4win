@@ -22,6 +22,7 @@ namespace CPUMonitoring {
         std::vector<MonitoringData>& monitoringData;
         ScreenInteractive& screen;
         int interval;
+        int timeout;
         std::vector<MonitoringData> localMonitoringData;
 
         struct PowerMeasurement {
@@ -57,7 +58,14 @@ namespace CPUMonitoring {
         CPUMonitor(std::atomic<bool>& newDataFlag, std::mutex& mutex,
             std::vector<MonitoringData>& data, ScreenInteractive& scr, int intervalMs)
             : newData(newDataFlag), dataMutex(mutex), monitoringData(data),
-            screen(scr), interval(intervalMs)
+            screen(scr), interval(intervalMs), timeout(-1)
+        {
+        }
+
+        CPUMonitor(std::atomic<bool>& newDataFlag, std::mutex& mutex,
+            std::vector<MonitoringData>& data, ScreenInteractive& scr, int intervalMs, int timeout)
+            : newData(newDataFlag), dataMutex(mutex), monitoringData(data),
+            screen(scr), interval(intervalMs), timeout(timeout)
         {
         }
 

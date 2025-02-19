@@ -71,9 +71,19 @@ class MonitoringData
 		double cpuEnergy = 0.0;
 
 		/**
+		* @brief the average power used by cpu for this process
+		*/
+		double avgCpuEnergy = 0.0;
+
+		/**
 		* @brief the total energy used by gpu for this process
 		*/
 		double gpuEnergy = 0.0;
+
+		/**
+		* @brief the average power used by gpu for this process
+		*/
+		double avgGpuEnergy = 0.0;
 
 		/**
 		* @brief the total energy used by sd for this process
@@ -81,9 +91,19 @@ class MonitoringData
 		double sdEnergy = 0.0;
 
 		/**
+		* @brief the average power used by sd for this process
+		*/
+		double avgSdEnergy = 0.0;
+
+		/**
 		* @brief the total energy used by nic for this process
 		*/
 		double nicEnergy = 0.0;
+
+		/**
+		* @brief the average power used by nic for this process
+		*/
+		double avgNicEnergy = 0.0;
 
 	public:
 
@@ -159,11 +179,25 @@ class MonitoringData
 		double getCPUEnergy() const;
 
 		/**
+		* @brief Gets the average power used by the CPU for this process
+		*
+		* @return double the average power in Watt used by the CPU for this process
+		*/
+		double getAvgCPUEnergy() const;
+
+		/**
 		* @brief Gets the energy used by the GPU for this process
 		*
 		* @return double the energy in Joules used by the GPU for this process
 		*/
 		double getGPUEnergy() const;
+
+		/**
+		* @brief Gets the average power used by the GPU for this process
+		*
+		* @return double the average power in Watt used by the GPU for this process
+		*/
+		double getAvgGPUEnergy() const;
 
 		/**
 		* @brief Gets the energy used by the SD for this process
@@ -173,11 +207,25 @@ class MonitoringData
 		double getSDEnergy() const;
 
 		/**
+		* @brief Gets the average power used by the SD for this process
+		*
+		* @return double the average power in Watt used by the SD for this process
+		*/
+		double getAvgSDEnergy() const;
+
+		/**
 		* @brief Gets the energy used by the NIC for this process
 		*
 		* @return double the energy in Joules used by the NIC for this process
 		*/
 		double getNICEnergy() const;
+
+		/**
+		* @brief Gets the average power used by the NIC for this process
+		*
+		* @return double the average power in Watt used by the NIC for this process
+		*/
+		double getAvgNICEnergy() const;
 
 		/**
 		* @brief Updates energy used by the CPU for this process by adding the current energy with the last enregy calculated

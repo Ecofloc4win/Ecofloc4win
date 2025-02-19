@@ -245,104 +245,291 @@ auto renderTable(int scrollPosition) -> Element
 	return table.Render() | flex;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
-	std::string input;
-	Component inputBox = Input(&input, "Type here");
-	inputBox |= CatchEvent([&](Event event)
-	{
-		if (event == Event::Return)
-		{
-			if (!input.empty())
-			{
-				readCommand(input);
-				input.clear();
-			}
-			return true;
-		}
-		return false;
-	});
 
 	auto screen = ScreenInteractive::Fullscreen();
 
-	// State variables for scrolling
-	int scrollPosition = 0;
-
-	// Component to handle input and update the scroll position
-	auto component = Renderer(inputBox, [&]
+	if (argc == 1)
 	{
-		return vbox(
+		std::string input;
+		Component inputBox = Input(&input, "Type here");
+		inputBox |= CatchEvent([&](Event event)
 			{
-				renderTable(scrollPosition),
-				separator(),
-				hbox(
+				if (event == Event::Return)
 				{
-					text("Command: "), inputBox->Render()
-				}),
-			}) | border;
-	});
+					if (!input.empty())
+					{
+						readCommand(input);
+						input.clear();
+					}
+					return true;
+				}
+				return false;
+			});
 
-	component = CatchEvent(component, [&](Event event)
+
+		// State variables for scrolling
+		int scrollPosition = 0;
+
+		// Component to handle input and update the scroll position
+		auto component = Renderer(inputBox, [&]
+			{
+				return vbox(
+					{
+						renderTable(scrollPosition),
+						separator(),
+						hbox(
+						{
+							text("Command: "), inputBox->Render()
+						}),
+					}) | border;
+			});
+
+		component = CatchEvent(component, [&](Event event)
+			{
+				int terminalHeight = Utils::getTerminalHeight();
+				int visibleRows = terminalHeight - 8;
+
+				if ((int)monitoringData.size() <= visibleRows)
+				{
+					scrollPosition = 0; // Disable scrolling if all rows fit
+					return false;
+				}
+
+				// Handle mouse wheel and arrow key events
+				if (event.is_mouse())
+				{
+					if (event.mouse().button == Mouse::WheelDown)
+					{
+						scrollPosition = std::min(scrollPosition + 1, (int)monitoringData.size() - visibleRows - 1);
+						return true;
+					}
+
+					if (event.mouse().button == Mouse::WheelUp)
+					{
+						scrollPosition = std::max(scrollPosition - 1, 0);
+						return true;
+					}
+				}
+
+				if (event == Event::ArrowDown)
+				{
+					scrollPosition = std::min(scrollPosition + 1, (int)monitoringData.size() - visibleRows - 1);
+					return true;
+				}
+
+				if (event == Event::ArrowUp)
+				{
+					scrollPosition = std::max(scrollPosition - 1, 0);
+					return true;
+				}
+
+				return false;
+			});
+
+		GPUMonitoring::GPUMonitor gpuMonitor(newDataGpu, dataMutex, monitoringData, screen, interval);
+		std::thread gpuThread([&gpuMonitor] { gpuMonitor.run(); });
+
+		StorageMonitoring::SDMonitor sdMonitor(newDataSd, dataMutex, monitoringData, screen, interval);
+		std::thread sdThread([&sdMonitor] { sdMonitor.run(); });
+
+		NetworkMonitoring::NICMonitor nicMonitor(newDataNic, dataMutex, monitoringData, screen, interval);
+		std::thread nicThread([&nicMonitor] { nicMonitor.run(); });
+
+		CPUMonitoring::CPUMonitor cpuMonitor(newDataCpu, dataMutex, monitoringData, screen, interval);
+		std::thread cpuThread([&cpuMonitor] { cpuMonitor.run(); });
+
+		// Run the application
+		screen.Loop(component);
+
+		gpuThread.join();
+		sdThread.join();
+		nicThread.join();
+		cpuThread.join();
+	}
+	else
 	{
-		int terminalHeight = Utils::getTerminalHeight();
-		int visibleRows = terminalHeight - 8;
+		bool updateCPU = false, updateGPU = false, updateNIC = false, updateSD = false;
+		int pid = -1, interval = 1000, timeout = 0;
+		std::string filename, processName;
 
-		if ((int)monitoringData.size() <= visibleRows)
+		for (int i = 1; i < argc; ++i)
 		{
-			scrollPosition = 0; // Disable scrolling if all rows fit
-			return false;
+			std::string arg = argv[i];
+			if (arg == "--cpu") updateCPU = true;
+			else if (arg == "--gpu") updateGPU = true;
+			else if (arg == "--nic") updateNIC = true;
+			else if (arg == "--sd") updateSD = true;
+			else if (arg == "-p" && i + 1 < argc) pid = std::stoi(argv[++i]);
+			else if (arg == "-n" && i + 1 < argc) processName = argv[++i];
+			else if (arg == "-i" && i + 1 < argc) interval = std::stoi(argv[++i]);
+			else if (arg == "-t" && i + 1 < argc) timeout = std::stoi(argv[++i]);
+			else if (arg == "-f" && i + 1 < argc) filename = argv[++i];
 		}
 
-		// Handle mouse wheel and arrow key events
-		if (event.is_mouse())
+		if (pid == -1 && processName.empty())
 		{
-			if (event.mouse().button == Mouse::WheelDown)
+			std::cerr << "Error: PID (-p) is required or use (-n) to add with name" << std::endl;
+			return 1;
+		}
+
+		if (pid != -1 && !processName.empty())
+		{
+			std::cerr << "Error: don't use (-p) and (-n) at the same time" << std::endl;
+			return 1;
+		}
+
+		if (!updateCPU && !updateGPU && !updateNIC && !updateSD)
+		{
+			std::cerr << "Error: At least one component (--cpu, --gpu, --nic, --sd) must be specified" << std::endl;
+			return 1;
+		}
+
+		if (timeout == 0 && filename.empty())
+		{
+			std::cerr << "Error: Either timeout (-t) or output file (-f) must be specified" << std::endl;
+			return 1;
+		}
+
+		if (timeout > 0 && !filename.empty())
+		{
+			std::cerr << "Error: Cannot specify both timeout (-t) and output file (-f)" << std::endl;
+			return 1;
+		}
+
+		if (timeout < 0)
+		{
+			std::cerr << "Error: Cannot specify timeout (-t) below zero" << std::endl;
+			return 1;
+		}
+
+
+		MonitoringData data;
+
+		if (pid == -1) 
+		{
+			std::vector<DWORD> pids = Utils::getPIDsByName(processName);
+			if (pids.empty()) 
 			{
-				scrollPosition = std::min(scrollPosition + 1, (int)monitoringData.size() - visibleRows - 1);
-				return true;
+				std::cerr << "Error: No process found with name " << processName << std::endl;
+				return 1;
 			}
-
-			if (event.mouse().button == Mouse::WheelUp)
+			std::vector<int> pidInts(pids.begin(), pids.end());
+			data = MonitoringData(processName, pidInts);
+			
+			if (updateCPU) 
 			{
-				scrollPosition = std::max(scrollPosition - 1, 0);
-				return true;
+				addProcName(processName, "CPU");
+			}
+			if (updateGPU) 
+			{
+				addProcName(processName, "GPU");
+			}
+			if (updateNIC) 
+			{
+				addProcName(processName, "NIC");
+			}
+			if (updateSD) 
+			{
+				addProcName(processName, "SD");
 			}
 		}
-
-		if (event == Event::ArrowDown)
+		else 
 		{
-			scrollPosition = std::min(scrollPosition + 1, (int)monitoringData.size() - visibleRows - 1);
-			return true;
+			data = MonitoringData(Utils::wstringToString(getProcessNameByPID(pid)), { pid });
+		}
+		
+		if (updateCPU)
+		{
+			data.enableComponent("CPU");
+			newDataCpu.store(true, std::memory_order_release);
+		}
+		if (updateGPU)
+		{
+			data.enableComponent("GPU");
+			newDataGpu.store(true, std::memory_order_release);
+		}
+		if (updateNIC)
+		{
+			data.enableComponent("NIC");
+			newDataNic.store(true, std::memory_order_release);
+		}
+		if (updateSD)
+		{
+			data.enableComponent("SD");
+			newDataSd.store(true, std::memory_order_release);
 		}
 
-		if (event == Event::ArrowUp)
 		{
-			scrollPosition = std::max(scrollPosition - 1, 0);
-			return true;
+			std::lock_guard<std::mutex> lock(dataMutex);
+			monitoringData.push_back(data);
 		}
 
-		return false;
-	});
+		std::vector<std::thread> monitoringThreads;
 
-	GPUMonitoring::GPUMonitor gpuMonitor(newDataGpu, dataMutex, monitoringData, screen, interval);
-	std::thread gpuThread([&gpuMonitor] { gpuMonitor.run(); });
+		if (updateCPU)
+		{
+			CPUMonitoring::CPUMonitor cpuMonitor(newDataCpu, dataMutex, monitoringData, screen, interval, timeout);
+			monitoringThreads.emplace_back([&cpuMonitor] { cpuMonitor.run(); });
+		}
+		if (updateGPU)
+		{
+			GPUMonitoring::GPUMonitor gpuMonitor(newDataCpu, dataMutex, monitoringData, screen, interval, timeout);
+			monitoringThreads.emplace_back([&gpuMonitor] { gpuMonitor.run(); });
+		}
+		if (updateNIC)
+		{
+			NetworkMonitoring::NICMonitor nicMonitor(newDataCpu, dataMutex, monitoringData, screen, interval, timeout);
+			monitoringThreads.emplace_back([&nicMonitor] { nicMonitor.run(); });
+		}
+		if (updateSD)
+		{
+			StorageMonitoring::SDMonitor sdMonitor(newDataCpu, dataMutex, monitoringData, screen, interval, timeout);
+			monitoringThreads.emplace_back([&sdMonitor] { sdMonitor.run(); });
+		}
 
-	StorageMonitoring::SDMonitor sdMonitor(newDataSd, dataMutex, monitoringData, screen, interval);
-	std::thread sdThread([&sdMonitor] { sdMonitor.run(); });
-
-	NetworkMonitoring::NICMonitor nicMonitor(newDataNic, dataMutex, monitoringData, screen, interval);
-	std::thread nicThread([&nicMonitor] { nicMonitor.run(); });
-
-	CPUMonitoring::CPUMonitor cpuMonitor(newDataCpu, dataMutex, monitoringData, screen, interval);
-	std::thread cpuThread([&cpuMonitor] { cpuMonitor.run(); });
-
-	// Run the application
-	screen.Loop(component);
-
-	gpuThread.join();
-	sdThread.join();
-	nicThread.join();
-	cpuThread.join();
+		if (timeout > 0)
+		{
+			for (auto& thread : monitoringThreads) {
+				thread.join();
+			}
+			
+			std::lock_guard<std::mutex> lock(dataMutex);
+			if (!monitoringData.empty())
+			{
+				const auto& data = monitoringData[0];
+				std::cout << "Monitoring results for " << ( (pid != -1) ? Utils::wstringToString(getProcessNameByPID(pid)) : processName)  << "\n***************************************\n";
+				if (updateCPU) std::cout << "CPU Energy: " << data.getCPUEnergy() << " J\n" << "CPU average Power : " << data.getAvgCPUEnergy() << " W\n***************************************\n";
+				if (updateGPU) std::cout << "GPU Energy: " << data.getGPUEnergy() << " J\n" << "GPU average Power : " << data.getAvgGPUEnergy() << " W\n***************************************\n";
+				if (updateSD) std::cout << "SD Energy: " << data.getSDEnergy() << " J\n" << "SD average Power : " << data.getAvgSDEnergy() << " W\n***************************************\n";
+				if (updateNIC) std::cout << "NIC Energy: " << data.getNICEnergy() << " J\n" << "NIC average Power : " << data.getAvgNICEnergy() << " W\n***************************************\n";
+			}
+			else
+			{
+				std::cerr << "MonitoringData is empty" << std::endl;
+			}
+		}
+		else
+		{
+			// Mode fichier continu
+			while (true)
+			{
+				{
+					std::lock_guard<std::mutex> lock(dataMutex);
+					if (!monitoringData.empty()) {
+						const auto& data = monitoringData[0];
+						Utils::updateJsonFile(filename, pid,
+							updateCPU ? data.getCPUEnergy() : 0, 0, 0, 0, dataMutex);
+						/*updateGPU ? data.getGPUEnergy() : 0,
+						updateNIC ? data.getNICEnergy() : 0,
+						updateSD ? data.getSDEnergy() : 0);*/
+					}
+				}
+				std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+			}
+		}
+	}
 	return 0;
 }
 
@@ -749,24 +936,6 @@ void enable(const std::string& lineNumber, const std::string& component)
 			it->second;
 		}
 
-		switch (it->second)
-		{
-		case Utils::CPU:
-			newDataCpu.store(true, std::memory_order_release);
-			break;
-		case Utils::GPU:
-			newDataGpu.store(true, std::memory_order_release);
-			break;
-		case Utils::SD:
-			newDataSd.store(true, std::memory_order_release);
-			break;
-		case Utils::NIC:
-			newDataNic.store(true, std::memory_order_release);
-			break;
-		}
-
-		//std::cout << "Component " << component << " has been enabled for process " << data.getName() << " at line " << line << std::endl;
-
 	}
 	catch (const std::invalid_argument& e)
 	{
@@ -807,22 +976,6 @@ void disable(const std::string& lineNumber, const std::string& component)
 		if (it != Utils::componentMap.end())
 		{
 			it->second;
-		}
-
-		switch (it->second)
-		{
-		case Utils::CPU:
-			newDataCpu.store(true, std::memory_order_release);
-			break;
-		case Utils::GPU:
-			newDataGpu.store(true, std::memory_order_release);
-			break;
-		case Utils::SD:
-			newDataSd.store(true, std::memory_order_release);
-			break;
-		case Utils::NIC:
-			newDataNic.store(true, std::memory_order_release);
-			break;
 		}
 
 		//std::cout << "Component " << component << " has been enabled for process " << data.getName() << " at line " << line << std::endl;

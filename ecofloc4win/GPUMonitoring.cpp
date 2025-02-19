@@ -30,12 +30,30 @@ void GPUMonitoring::GPUMonitor::processMonitoringData()
     }
 }
 
-void GPUMonitoring::GPUMonitor::run() {
-    while (true) {
-        processMonitoringData();
-        screen.Post(Event::Custom);
-
-        // Reduce CPU usage by adding a small delay
-        std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+void GPUMonitoring::GPUMonitor::run() 
+{
+    switch (this->timeout)
+    {
+    case -1:
+        while (true)
+        {
+            processMonitoringData();
+            screen.Post(Event::Custom);
+        }
+        break;
+    case 0:
+        while (true)
+        {
+            processMonitoringData();
+        }
+        break;
+    default:
+        int iterations = (this->timeout * 1000) / interval;
+        while (iterations > 0)
+        {
+            processMonitoringData();
+            iterations--;
+        }
+        break;
     }
 }

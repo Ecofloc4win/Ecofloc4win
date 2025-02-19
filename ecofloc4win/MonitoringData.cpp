@@ -105,9 +105,19 @@ double MonitoringData::getCPUEnergy() const
 	return cpuEnergy;
 }
 
+double MonitoringData::getAvgCPUEnergy() const
+{
+	return avgCpuEnergy;
+}
+
 double MonitoringData::getGPUEnergy() const
 {
 	return gpuEnergy;
+}
+
+double MonitoringData::getAvgGPUEnergy() const
+{
+	return avgGpuEnergy;
 }
 
 double MonitoringData::getSDEnergy() const
@@ -115,29 +125,47 @@ double MonitoringData::getSDEnergy() const
 	return sdEnergy;
 }
 
+double MonitoringData::getAvgSDEnergy() const
+{
+	return avgSdEnergy;
+}
+
 double MonitoringData::getNICEnergy() const
 {
 	return nicEnergy;
 }
 
+double MonitoringData::getAvgNICEnergy() const
+{
+	return avgNicEnergy;
+}
+
 void MonitoringData::updateCPUEnergy(double energy)
 {
 	cpuEnergy += energy;
+	avgCpuEnergy += energy;
+	avgCpuEnergy /= 2;
 }
 
 void MonitoringData::updateGPUEnergy(double energy)
 {
 	gpuEnergy += energy;
+	avgGpuEnergy += energy;
+	avgGpuEnergy /= 2;
 }
 
 void MonitoringData::updateSDEnergy(double energy)
 {
 	sdEnergy += energy;
+	avgSdEnergy += energy;
+	avgSdEnergy /= 2;
 }
 
 void MonitoringData::updateNICEnergy(double energy)
 {
 	nicEnergy += energy;
+	avgNicEnergy += energy;
+	avgNicEnergy /= 2;
 }
 
 void MonitoringData::addIrp(ULONGLONG irpAddress, const IoEventInfo& info) {

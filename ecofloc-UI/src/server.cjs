@@ -11,7 +11,7 @@ const PORT = 3030;
 const PATHS = {
     PROCESS_JSON: './Json/process.json',
     METRICS_DIRECTORY: path.join(__dirname, 'Json/'),
-    MONITORING: path.join(__dirname, 'Ecofloc4Win.exe'),
+    MONITORING: path.join(__dirname, 'ecofloc4win.exe'),
     CONFIGURATOR: path.join(__dirname, '..', '..', 'EcoflocConfigurator.exe'),
     PID_RECUP: path.join(__dirname, 'PIDRecup.exe')
 };

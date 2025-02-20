@@ -1,0 +1,13 @@
+{
+    "apps": [
+        {
+            "color": "#1D02BF",
+            "pid": 12536,
+            "power_w_CPU": 0.0,
+            "power_w_GPU": 0.0,
+            "power_w_NIC": 0.0,
+            "power_w_SD": 7.886792452830189e-08
+        }
+    ],
+    "time": 1740051008
+}

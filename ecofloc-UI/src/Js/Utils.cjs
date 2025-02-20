@@ -46,7 +46,7 @@ function launchMonitoring(PID, MONITORING_PATH, METRICS_DIRECTORY, INTERVAL) {
         console.error('Error checking running processes:', error);
     }
 
-    const COMPONENTS = ["--cpu", "--gpu", "--nic", "--sd"];
+    const COMPONENTS = ["--cpu", "--nic", "--sd"];
     const EXPORT_FILE_PATH = path.join(METRICS_DIRECTORY, `${PID}.json`);
     const COMMAND = `"${MONITORING_PATH}" ${COMPONENTS.join(' ')} -p ${PID} -i ${INTERVAL} -f "${EXPORT_FILE_PATH}"`;
     

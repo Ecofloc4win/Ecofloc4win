@@ -76,6 +76,11 @@ class MonitoringData
 		double avgCpuEnergy = 0.0;
 
 		/**
+		* @brief the current power used by cpu for this process
+		*/
+		double currentCpuPower = 0.0;
+
+		/**
 		* @brief the total energy used by gpu for this process
 		*/
 		double gpuEnergy = 0.0;
@@ -84,6 +89,11 @@ class MonitoringData
 		* @brief the average power used by gpu for this process
 		*/
 		double avgGpuEnergy = 0.0;
+
+		/**
+		* @brief the current power used by gpu for this process
+		*/
+		double currentGpuPower = 0.0;
 
 		/**
 		* @brief the total energy used by sd for this process
@@ -96,6 +106,11 @@ class MonitoringData
 		double avgSdEnergy = 0.0;
 
 		/**
+		* @brief the current power used by sd for this process
+		*/
+		double currentSdPower = 0.0;
+
+		/**
 		* @brief the total energy used by nic for this process
 		*/
 		double nicEnergy = 0.0;
@@ -104,6 +119,11 @@ class MonitoringData
 		* @brief the average power used by nic for this process
 		*/
 		double avgNicEnergy = 0.0;
+
+		/**
+		* @brief the current power used by nic for this process
+		*/
+		double currentNicPower = 0.0;
 
 	public:
 
@@ -186,6 +206,13 @@ class MonitoringData
 		double getAvgCPUEnergy() const;
 
 		/**
+		* @brief Gets the current power used by the CPU for this process
+		*
+		* @return double the current power in Watt used by the CPU for this process
+		*/
+		double getCurrentCPUPower() const;
+
+		/**
 		* @brief Gets the energy used by the GPU for this process
 		*
 		* @return double the energy in Joules used by the GPU for this process
@@ -198,6 +225,13 @@ class MonitoringData
 		* @return double the average power in Watt used by the GPU for this process
 		*/
 		double getAvgGPUEnergy() const;
+
+		/**
+		* @brief Gets the current power used by the GPU for this process
+		*
+		* @return double the current power in Watt used by the GPU for this process
+		*/
+		double getCurrentGPUPower() const;
 
 		/**
 		* @brief Gets the energy used by the SD for this process
@@ -214,6 +248,13 @@ class MonitoringData
 		double getAvgSDEnergy() const;
 
 		/**
+		* @brief Gets the current power used by the SD for this process
+		*
+		* @return double the current power in Watt used by the SD for this process
+		*/
+		double getCurrentSDPower() const;
+
+		/**
 		* @brief Gets the energy used by the NIC for this process
 		*
 		* @return double the energy in Joules used by the NIC for this process
@@ -226,6 +267,13 @@ class MonitoringData
 		* @return double the average power in Watt used by the NIC for this process
 		*/
 		double getAvgNICEnergy() const;
+
+		/**
+		* @brief Gets the current power used by the NIC for this process
+		*
+		* @return double the current power in Watt used by the NIC for this process
+		*/
+		double getCurrentNICPower() const;
 
 		/**
 		* @brief Updates energy used by the CPU for this process by adding the current energy with the last enregy calculated

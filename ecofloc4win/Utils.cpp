@@ -69,6 +69,11 @@ namespace Utils
     {
         std::lock_guard<std::mutex> lock(mutex);
 
+        /*std::cout << "CPU : " << valueCPU << " J,\n";
+        std::cout << "GPU : " << valueGPU << " J,\n";
+        std::cout << "NIC : " << valueNIC << " J,\n";
+        std::cout << "SD : " << valueSD << " J,\n";*/
+
         json data;
         std::ifstream inFile(filename);
         if (inFile) 

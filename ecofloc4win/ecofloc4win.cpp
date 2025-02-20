@@ -471,42 +471,37 @@ int main(int argc, char* argv[])
 
 		std::vector<std::thread> monitoringThreads;
 
-		if (updateCPU)
-		{
-			CPUMonitoring::CPUMonitor cpuMonitor(newDataCpu, dataMutex, monitoringData, screen, interval, timeout);
-			monitoringThreads.emplace_back([&cpuMonitor] { cpuMonitor.run(); });
-		}
-		if (updateGPU)
-		{
-			GPUMonitoring::GPUMonitor gpuMonitor(newDataCpu, dataMutex, monitoringData, screen, interval, timeout);
-			monitoringThreads.emplace_back([&gpuMonitor] { gpuMonitor.run(); });
-		}
-		if (updateNIC)
-		{
-			NetworkMonitoring::NICMonitor nicMonitor(newDataCpu, dataMutex, monitoringData, screen, interval, timeout);
-			monitoringThreads.emplace_back([&nicMonitor] { nicMonitor.run(); });
-		}
-		if (updateSD)
-		{
-			StorageMonitoring::SDMonitor sdMonitor(newDataCpu, dataMutex, monitoringData, screen, interval, timeout);
-			monitoringThreads.emplace_back([&sdMonitor] { sdMonitor.run(); });
-		}
+		GPUMonitoring::GPUMonitor gpuMonitor(newDataGpu, dataMutex, monitoringData, screen, interval, timeout);
+		std::thread gpuThread([&gpuMonitor] { gpuMonitor.run(); });
+
+		StorageMonitoring::SDMonitor sdMonitor(newDataSd, dataMutex, monitoringData, screen, interval, timeout);
+		std::thread sdThread([&sdMonitor] { sdMonitor.run(); });
+
+		NetworkMonitoring::NICMonitor nicMonitor(newDataNic, dataMutex, monitoringData, screen, interval, timeout);
+		std::thread nicThread([&nicMonitor] { nicMonitor.run(); });
+
+		CPUMonitoring::CPUMonitor cpuMonitor(newDataCpu, dataMutex, monitoringData, screen, interval, timeout);
+		std::thread cpuThread([&cpuMonitor] { cpuMonitor.run(); });
+
+
+		
 
 		if (timeout > 0)
 		{
-			for (auto& thread : monitoringThreads) {
-				thread.join();
-			}
+			gpuThread.join();
+			sdThread.join();
+			nicThread.join();
+			cpuThread.join();
 			
 			std::lock_guard<std::mutex> lock(dataMutex);
 			if (!monitoringData.empty())
 			{
 				const auto& data = monitoringData[0];
-				std::cout << "Monitoring results for " << ( (pid != -1) ? Utils::wstringToString(getProcessNameByPID(pid)) : processName)  << "\n***************************************\n";
+				std::cout << "\n\nMonitoring results for " << ( (pid != -1) ? Utils::wstringToString(getProcessNameByPID(pid)) : processName)  << "\n***************************************\n";
 				if (updateCPU) std::cout << "CPU Energy: " << data.getCPUEnergy() << " J\n" << "CPU average Power : " << data.getAvgCPUEnergy() << " W\n***************************************\n";
 				if (updateGPU) std::cout << "GPU Energy: " << data.getGPUEnergy() << " J\n" << "GPU average Power : " << data.getAvgGPUEnergy() << " W\n***************************************\n";
+				if (updateNIC) std::cout << "NIC Energy: " << data.getNICEnergy() << " J\n" << "NIC average Power : " << data.getAvgNICEnergy() << " W\n***************************************\n\n";
 				if (updateSD) std::cout << "SD Energy: " << data.getSDEnergy() << " J\n" << "SD average Power : " << data.getAvgSDEnergy() << " W\n***************************************\n";
-				if (updateNIC) std::cout << "NIC Energy: " << data.getNICEnergy() << " J\n" << "NIC average Power : " << data.getAvgNICEnergy() << " W\n***************************************\n";
 			}
 			else
 			{
@@ -519,18 +514,22 @@ int main(int argc, char* argv[])
 			while (true)
 			{
 				{
-					std::lock_guard<std::mutex> lock(dataMutex);
 					if (!monitoringData.empty()) {
 						const auto& data = monitoringData[0];
 						Utils::updateJsonFile(filename, pid,
-							updateCPU ? data.getCPUEnergy() : 0, 0, 0, 0, dataMutex);
-						/*updateGPU ? data.getGPUEnergy() : 0,
-						updateNIC ? data.getNICEnergy() : 0,
-						updateSD ? data.getSDEnergy() : 0);*/
+						updateCPU ? data.getCurrentCPUPower() : 0,
+						updateGPU ? data.getCurrentGPUPower() : 0,
+						updateNIC ? data.getCurrentNICPower() : 0,
+						updateSD ? data.getCurrentSDPower() : 0,
+						dataMutex);
 					}
 				}
 				std::this_thread::sleep_for(std::chrono::milliseconds(interval));
 			}
+			gpuThread.join();
+			sdThread.join();
+			nicThread.join();
+			cpuThread.join();
 		}
 	}
 	return 0;

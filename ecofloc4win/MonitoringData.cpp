@@ -110,6 +110,11 @@ double MonitoringData::getAvgCPUEnergy() const
 	return avgCpuEnergy;
 }
 
+double MonitoringData::getCurrentCPUPower() const
+{
+	return currentCpuPower;
+}
+
 double MonitoringData::getGPUEnergy() const
 {
 	return gpuEnergy;
@@ -118,6 +123,11 @@ double MonitoringData::getGPUEnergy() const
 double MonitoringData::getAvgGPUEnergy() const
 {
 	return avgGpuEnergy;
+}
+
+double MonitoringData::getCurrentGPUPower() const
+{
+	return currentGpuPower;
 }
 
 double MonitoringData::getSDEnergy() const
@@ -130,6 +140,11 @@ double MonitoringData::getAvgSDEnergy() const
 	return avgSdEnergy;
 }
 
+double MonitoringData::getCurrentSDPower() const
+{
+	return currentSdPower;
+}
+
 double MonitoringData::getNICEnergy() const
 {
 	return nicEnergy;
@@ -140,9 +155,15 @@ double MonitoringData::getAvgNICEnergy() const
 	return avgNicEnergy;
 }
 
+double MonitoringData::getCurrentNICPower() const
+{
+	return currentNicPower;
+}
+
 void MonitoringData::updateCPUEnergy(double energy)
 {
 	cpuEnergy += energy;
+	currentCpuPower = energy;
 	avgCpuEnergy += energy;
 	avgCpuEnergy /= 2;
 }
@@ -150,6 +171,7 @@ void MonitoringData::updateCPUEnergy(double energy)
 void MonitoringData::updateGPUEnergy(double energy)
 {
 	gpuEnergy += energy;
+	currentGpuPower = energy;
 	avgGpuEnergy += energy;
 	avgGpuEnergy /= 2;
 }
@@ -157,6 +179,7 @@ void MonitoringData::updateGPUEnergy(double energy)
 void MonitoringData::updateSDEnergy(double energy)
 {
 	sdEnergy += energy;
+	currentSdPower = energy;
 	avgSdEnergy += energy;
 	avgSdEnergy /= 2;
 }
@@ -164,6 +187,7 @@ void MonitoringData::updateSDEnergy(double energy)
 void MonitoringData::updateNICEnergy(double energy)
 {
 	nicEnergy += energy;
+	currentNicPower = energy;
 	avgNicEnergy += energy;
 	avgNicEnergy /= 2;
 }

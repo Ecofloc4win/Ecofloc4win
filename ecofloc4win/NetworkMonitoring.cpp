@@ -108,12 +108,14 @@ void NetworkMonitoring::NICMonitor::run()
         {
             processMonitoringData();
             screen.Post(Event::Custom);
+            std::this_thread::sleep_for(std::chrono::milliseconds(interval));
         }
         break;
     case 0:
         while (true)
         {
             processMonitoringData();
+            std::this_thread::sleep_for(std::chrono::milliseconds(interval));
         }
         break;
     default:
@@ -122,6 +124,7 @@ void NetworkMonitoring::NICMonitor::run()
         {
             processMonitoringData();
             iterations--;
+            std::this_thread::sleep_for(std::chrono::milliseconds(interval));
         }
         break;
     }

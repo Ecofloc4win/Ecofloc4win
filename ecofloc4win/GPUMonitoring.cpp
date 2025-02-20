@@ -39,12 +39,14 @@ void GPUMonitoring::GPUMonitor::run()
         {
             processMonitoringData();
             screen.Post(Event::Custom);
+            std::this_thread::sleep_for(std::chrono::milliseconds(interval));
         }
         break;
     case 0:
         while (true)
         {
             processMonitoringData();
+            std::this_thread::sleep_for(std::chrono::milliseconds(interval));
         }
         break;
     default:
@@ -52,6 +54,7 @@ void GPUMonitoring::GPUMonitor::run()
         while (iterations > 0)
         {
             processMonitoringData();
+            std::this_thread::sleep_for(std::chrono::milliseconds(interval));
             iterations--;
         }
         break;

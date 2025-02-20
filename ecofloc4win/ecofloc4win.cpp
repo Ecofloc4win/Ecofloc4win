@@ -99,7 +99,7 @@ std::unordered_map<std::string, int> actions =
 };
 
 /**
- * 
+ *
  *
  * can be replace
  */
@@ -112,7 +112,7 @@ std::atomic<int> interval = 500;
 
 /**
  * @brief Reads the command written by the user and called the right function
- * 
+ *
  * @param commandHandle the command written by the user
  */
 void readCommand(std::string commandHandle);
@@ -166,8 +166,8 @@ std::wstring getProcessNameByPID(DWORD processID);
 
 /**
  * @brief Generates all rows of the table to show in the terminal
- * 
- * @return vector of vectors of strings the results' table 
+ *
+ * @return vector of vectors of strings the results' table
  */
 auto createTableRows() -> std::vector<std::vector<std::string>>
 {
@@ -194,11 +194,11 @@ auto createTableRows() -> std::vector<std::vector<std::string>>
 		rows.emplace_back(std::vector<std::string>
 		{
 			std::to_string(rowNumber),
-			data.getName(),
-			" " + cpuEnergyStream.str() + " J ",
-			" " + gpuEnergyStream.str() + " J ",
-			" " + sdEnergyStream.str() + " J ",
-			" " + nicEnergyStream.str() + " J "
+				data.getName(),
+				" " + cpuEnergyStream.str() + " J ",
+				" " + gpuEnergyStream.str() + " J ",
+				" " + sdEnergyStream.str() + " J ",
+				" " + nicEnergyStream.str() + " J "
 		});
 		rowNumber++;
 	}
@@ -210,7 +210,7 @@ auto createTableRows() -> std::vector<std::vector<std::string>>
  * @brief Shows the table in the terminal
  *
  * @param scrollPosition The current position of the scroll
- * @return Element the render of the complete table 
+ * @return Element the render of the complete table
  */
 auto renderTable(int scrollPosition) -> Element
 {
@@ -245,10 +245,11 @@ auto renderTable(int scrollPosition) -> Element
 	return table.Render() | flex;
 }
 
+
 int main(int argc, char* argv[])
 {
 
-	auto screen = ScreenInteractive::Fullscreen();
+	
 
 	if (argc == 1)
 	{
@@ -268,6 +269,7 @@ int main(int argc, char* argv[])
 				return false;
 			});
 
+		auto screen = ScreenInteractive::Fullscreen();
 
 		// State variables for scrolling
 		int scrollPosition = 0;
@@ -350,6 +352,7 @@ int main(int argc, char* argv[])
 	}
 	else
 	{
+		auto screen = ScreenInteractive::Fullscreen();
 		bool updateCPU = false, updateGPU = false, updateNIC = false, updateSD = false;
 		int pid = -1, interval = 1000, timeout = 0;
 		std::string filename, processName;
@@ -697,9 +700,9 @@ void addProcPid(const std::string& pid, const std::string& component)
 			// Check for duplicate before adding
 			auto it = std::find_if(monitoringData.begin(), monitoringData.end(),
 				[processId](const MonitoringData& data)
-			{
-				return std::find(data.getPids().begin(), data.getPids().end(), processId) != data.getPids().end();
-			});
+				{
+					return std::find(data.getPids().begin(), data.getPids().end(), processId) != data.getPids().end();
+				});
 
 			if (it == monitoringData.end())
 			{
@@ -711,7 +714,7 @@ void addProcPid(const std::string& pid, const std::string& component)
 				{
 					it2->second;
 				}
-				
+
 				switch (it2->second)
 				{
 				case Utils::CPU:
@@ -768,9 +771,9 @@ void addProcName(const std::string& name, const std::string& component)
 				// Check for duplicates in `comp[component].first`
 				auto it = std::find_if(comp[component].first.begin(), comp[component].first.end(),
 					[&processId](const process& o)
-				{
-					return o.getPid() == std::to_string(processId);
-				});
+					{
+						return o.getPid() == std::to_string(processId);
+					});
 
 				if (it == comp[component].first.end())
 				{
@@ -861,9 +864,9 @@ void removeProcByLineNumber(const std::string& lineNumber) noexcept
 			processes.erase(
 				std::remove_if(processes.begin(), processes.end(),
 					[&pidsToRemove](const process& p)
-				{
-					return pidsToRemove.count(std::stoi(p.getPid())) > 0;
-				}),
+					{
+						return pidsToRemove.count(std::stoi(p.getPid())) > 0;
+					}),
 				processes.end()
 			);
 
@@ -936,6 +939,24 @@ void enable(const std::string& lineNumber, const std::string& component)
 			it->second;
 		}
 
+		switch (it->second)
+		{
+		case Utils::CPU:
+			newDataCpu.store(true, std::memory_order_release);
+			break;
+		case Utils::GPU:
+			newDataGpu.store(true, std::memory_order_release);
+			break;
+		case Utils::SD:
+			newDataSd.store(true, std::memory_order_release);
+			break;
+		case Utils::NIC:
+			newDataNic.store(true, std::memory_order_release);
+			break;
+		}
+
+		//std::cout << "Component " << component << " has been enabled for process " << data.getName() << " at line " << line << std::endl;
+
 	}
 	catch (const std::invalid_argument& e)
 	{
@@ -976,6 +997,22 @@ void disable(const std::string& lineNumber, const std::string& component)
 		if (it != Utils::componentMap.end())
 		{
 			it->second;
+		}
+
+		switch (it->second)
+		{
+		case Utils::CPU:
+			newDataCpu.store(true, std::memory_order_release);
+			break;
+		case Utils::GPU:
+			newDataGpu.store(true, std::memory_order_release);
+			break;
+		case Utils::SD:
+			newDataSd.store(true, std::memory_order_release);
+			break;
+		case Utils::NIC:
+			newDataNic.store(true, std::memory_order_release);
+			break;
 		}
 
 		//std::cout << "Component " << component << " has been enabled for process " << data.getName() << " at line " << line << std::endl;

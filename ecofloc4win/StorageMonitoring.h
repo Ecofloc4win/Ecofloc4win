@@ -22,8 +22,14 @@
 
 using namespace ftxui;
 
+
+/**
+* @brief Namespace for storage monitoring related classes and functions.
+*/
 namespace StorageMonitoring {
-    // Helper class for registry operations
+    /**
+	* @brief Helper class for registry operations.
+    */
     class RegistryHelper {
     public:
         /**
@@ -35,28 +41,65 @@ namespace StorageMonitoring {
         static DWORD getCounterIndex(const std::string& counterName);
 
     private:
+        /**
+		* @brief Helper class for automatically closing a registry key.
+        */
         class AutoRegistryKey {
         public:
+            /**
+			* @brief Constructor for the AutoRegistryKey class.
+            */
             AutoRegistryKey(const wchar_t* path) {
                 if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, path, 0, KEY_READ, &hKey) != ERROR_SUCCESS) {
                     hKey = nullptr;
                 }
             }
+
+			/**
+			* @brief Destructor for the AutoRegistryKey class.
+            */
             ~AutoRegistryKey() {
                 if (hKey) RegCloseKey(hKey);
             }
+
+            /**
+			* @brief Gets the handle to the registry key.
+            */
             HKEY get() const { return hKey; }
+
+            /**
+			* @brief Checks if the registry key is valid.
+            */
             bool isValid() const { return hKey != nullptr; }
         private:
             HKEY hKey;
         };
 
+        /**
+		* @brief Parses the counter data from the registry.
+        * 
+		* @param hKey The handle to the registry key
+		* @param counterName The name of the counter
+        * 
+		* @return DWORD the Index of the counter
+        */
         static DWORD parseCounterData(HKEY hKey, const std::string& counterName);
 
+        /**
+		* @brief Finds the index of a counter in the buffer based on its name.
+        * 
+		* @param buffer The buffer containing the counter data
+		* @param size The size of the buffer
+		* @param targetName The name of the counter
+        * 
+		* @return DWORD the Index of the counter
+        */
         static DWORD findCounterIndex(const char* buffer, DWORD size, const std::string& targetName);
     };
 
-    // Helper class for PDH operations
+    /**
+	* @brief Helper class for PDH operations.
+    */
     class PDHHelper {
     public:
         /**
@@ -69,24 +112,63 @@ namespace StorageMonitoring {
          */
         static std::wstring getLocalizedCounterPath(const std::wstring& processName, const std::string& counterName);
 
+		/**
+		 * @brief Gets the instance name for a given process ID.
+		 *
+		 * @param targetPID The pid
+		 * @return wstring the name of the instance
+		 */
         static std::wstring getInstanceForPID(int targetPID);
 
     private:
+
+        /**
+		* @brief Helper class for PDH query operations.
+        */
         class PDHQueryWrapper {
         public:
+            /**
+			* @brief Constructor for the PDHQueryWrapper class.
+            */
             PDHQueryWrapper() {
                 if (PdhOpenQuery(nullptr, 0, &query) != ERROR_SUCCESS) {
                     throw std::runtime_error("Failed to open PDH query");
                 }
             }
+
+			/**
+			* @brief Destructor for the PDHQueryWrapper class.
+			*/
             ~PDHQueryWrapper() { PdhCloseQuery(query); }
+
+			/**
+			* @brief Gets the handle to the PDH query.
+			*/
             PDH_HQUERY get() const { return query; }
         private:
             PDH_HQUERY query;
         };
 
+		/**
+		* @brief Finds the localized name of a performance counter based on its index.
+		*
+		* @param index The index of the counter
+		* @param buffer The buffer to store the localized name
+		* @param size The size of the buffer
+        * 
+		* @return bool true if the lookup was successful, false otherwise
+		*/
         static bool lookupPerfName(DWORD index, wchar_t* buffer, DWORD size);
 
+        /**
+		* @brief Builds the counter path for a given process name, instance name and counter name.
+        * 
+		* @param processName The name of the process
+		* @param instanceName The name of the instance
+		* @param counterName The name of the counter
+        * 
+		* @return wstring the counter path
+        */
         static std::wstring buildCounterPath(const wchar_t* processName, const std::wstring& instanceName, const wchar_t* counterName);
 
         /**
@@ -98,6 +180,9 @@ namespace StorageMonitoring {
         static std::wstring findInstanceForPID(PDH_HCOUNTER pidCounter, int targetPID);
     };
 
+    /**
+	* @brief Class to monitor storage devices.
+    */
     class SDMonitor {
     private:
         std::atomic<bool>& newDataSd;
@@ -109,17 +194,40 @@ namespace StorageMonitoring {
         PDH_HQUERY query;
         std::map<std::wstring, std::pair<PDH_HCOUNTER, PDH_HCOUNTER>> processCounters;
 
+		/**
+		* @brief Initializes the PDH query.
+        * 
+		* @return bool true if the query was successfully initialized, false otherwise
+        */
         bool initializeQuery();
 
+        /**
+		* @brief Sets up the counters for the given process instance.
+        * 
+		* @param instanceName The name of the process instance
+		* @return bool true if the counters were successfully set up, false otherwise
+        */
         bool setupCounters(const std::wstring& instanceName);
 
+        /**
+		* @brief Collects and updates the metrics for the process.
+        */
         void collectAndUpdateMetrics();
 
+        /**
+		* @brief Updates the energy metrics for the process.
+        */
         void updateEnergyMetrics(long readRate, long writeRate);
 
+        /**
+		* @brief Processes the monitoring data for the storage devices.
+        */
         void processMonitoringData();
 
     public:
+        /**
+		* @brief Constructor for the SDMonitor class.
+        */
         SDMonitor(std::atomic<bool>& newDataFlag, std::mutex& mutex,
             std::vector<MonitoringData>& data, ScreenInteractive& scr, int intervalMs)
             : newDataSd(newDataFlag), dataMutex(mutex), monitoringData(data),
@@ -129,10 +237,16 @@ namespace StorageMonitoring {
             }
         }
 
+		/**
+		* @brief Destructor for the SDMonitor class.
+		*/
         ~SDMonitor() {
             PdhCloseQuery(query);
         }
 
+		/**
+		* @brief Runs the SD monitoring process.
+		*/
         void run();
     };
 }

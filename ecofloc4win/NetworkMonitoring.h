@@ -18,8 +18,14 @@
 
 using namespace ftxui;
 
+/**
+* @brief Namespace for network monitoring related classes and functions.
+*/
 namespace NetworkMonitoring
 {
+	/**
+	* @brief Class to monitor network interfaces.
+	*/
     class NICMonitor
     {
     private:
@@ -35,16 +41,35 @@ namespace NetworkMonitoring
             std::unique_ptr<BYTE[]> buffer;
             PMIB_TCPTABLE_OWNER_PID tcpTable;
 
+            /**
+			* @brief Constructor for the TCPTableWrapper class.
+            */
             bool initialize();
         };
 
+        /**
+		* @brief Gets the TCP table.
+        * 
+		* @param tcpTable The TCP table
+        */
         void processConnection(const MIB_TCPROW_OWNER_PID& row);
 
+        /**
+		* @brief Processes the monitoring data for the network interfaces.
+        * 
+		* @param data The monitoring data
+        */
         void updateEnergyMetrics(PTCP_ESTATS_DATA_ROD_v0 dataRod);
 
+        /**
+		* @brief Processes the monitoring data for the network interfaces.
+        */
         void processMonitoringData();
 
     public:
+        /**
+		* @brief Constructor for the NICMonitor class.
+        */
         NICMonitor(std::atomic<bool>& newDataFlag, std::mutex& mutex,
             std::vector<MonitoringData>& data, ScreenInteractive& scr, int intervalMs)
             : newData(newDataFlag), dataMutex(mutex), monitoringData(data),
@@ -52,6 +77,9 @@ namespace NetworkMonitoring
         {
         }
 
+        /**
+		* @brief Runs the NIC monitoring process.
+        */
         void run();
     };
 }

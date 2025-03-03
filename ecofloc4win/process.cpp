@@ -1,3 +1,10 @@
+/**
+ * @file process.cpp
+ * @brief Definition of the process class
+ * @author Ecofloc's Team
+ * @date 2025-02-03
+ */
+
 #include "process.h"
 
 process::process(std::string pid, std::string name)

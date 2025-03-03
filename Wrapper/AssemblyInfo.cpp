@@ -1,3 +1,10 @@
+/**
+ * @file AssemblyInfo.cpp
+ * @brief 
+ * @author Ecofloc's Team
+ * @date 2025-02-03
+ */
+
 #include "pch.h"
 
 using namespace System;

@@ -11,11 +11,12 @@
 #include <vector>
 #include <Windows.h>
 
-#define NVML_SUCCESS 0
-
 /**
  * @brief Defines NVML types and constants
+ * @{
  */
+#define NVML_SUCCESS 0
+
 typedef int nvmlReturn_t;
 typedef void* nvmlDevice_t;
 
@@ -119,9 +120,9 @@ class NVMLManager
 };
 
 /**
- * @namespace GPU
- * @brief Namespace for GPU-related functionalities.
+ * @}
  */
+
 namespace GPU 
 {
     int initNVML() 

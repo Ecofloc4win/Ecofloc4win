@@ -1,5 +1,20 @@
+/**
+ * @file ClassDynamicGraph.js
+ * @brief Defines the DynamicGraph class for managing dynamic plots.
+ * @author Ecofloc's Team
+ * @lastupdate 2025-02-18
+ */
+
+/**
+ * @class DynamicGraph
+ * @brief Represents a dynamic graph for monitoring power consumption.
+ */
 class DynamicGraph 
 {
+    /**
+     * @brief Constructor for the DynamicGraph class.
+     * @param {string} graphName - The name of the graph.
+     */
     constructor(graphName) 
     {
         this.layout = 
@@ -30,6 +45,14 @@ class DynamicGraph
         Plotly.newPlot(this.graphName, [], this.layout, { responsive: true, displayModeBar: false });
     }
 
+    /**
+     * @brief Updates the graph with new data.
+     * @function updatePlot
+     * @param {string} PID - The process ID of the application.
+     * @param {number} value - The current power consumption value of the component.
+     * @param {number} time - The current monitoring time.
+     * @param {string} color - The color to apply to the graph.
+     */
     updatePlot(PID, value, time, color) 
     {
         // Checks if the PID already exists otherwise create it
@@ -92,6 +115,11 @@ class DynamicGraph
         );
     }
 
+    /**
+     * @brief Generates a random color for the graph.
+     * @function getRandomColor
+     * @returns {string} A randomly generated RGB color string.
+     */
     getRandomColor() 
     {
         const r = Math.floor(Math.random() * 200)+55;

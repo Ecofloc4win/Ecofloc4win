@@ -1,5 +1,10 @@
-// pch.cpp : fichier source correspondant à l'en-tête précompilé
+/**
+ * @file pch.cpp
+ * @brief Source file corresponding to the precompiled header
+ * @author Ecofloc's Team
+ * @date 2025-02-03
+ */
 
 #include "pch.h"
 
-// Quand vous utilisez des en-têtes précompilés, ce fichier source est nécessaire pour la réussite de la compilation.
+// When using precompiled headers, this source file is necessary for successful compilation.

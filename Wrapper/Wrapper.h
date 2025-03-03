@@ -1,3 +1,10 @@
+/**
+ * @file Wrapper.cpp
+ * @brief Implementation of the bridge
+ * @author Ecofloc's Team
+ * @date 2025-02-03
+ */
+
 #pragma once
 
 #include <msclr/marshal_cppstd.h>
@@ -11,148 +18,243 @@ using namespace System::Collections::Generic;
 using namespace System::Text::RegularExpressions;
 using namespace LibreHardwareMonitor::Hardware;
 
+/**
+ * @class ManagedBridge
+ * @brief Links LibreHardwareMonitor library in C# with our c++ application
+ */
 public ref class ManagedBridge
 {
-public:
-    ManagedBridge() {
-        computer = gcnew Computer();
-        computer->IsCpuEnabled = true;
-        computer->Open();
-
-		String^ filename = "log.txt";
-
-		StreamWriter^ sw = gcnew StreamWriter(filename);
-		sw->WriteLine("Log file created at {0}", DateTime::Now);
-		sw->WriteLine(computer->GetReport());
-		sw->Close();
-
-        lastUpdate = DateTime::Now - updateInterval;
-
-        InitializeSensors();
-    }
-
-    float^ getCPUCoresPower() {
-        RefreshHardware();
-        return cpuPower;
-    }
-
-    List<float>^ getCPUCoresClocks() {
-        RefreshHardware();
-        return cpuClocks;
-    }
-
-    List<float>^ getCPUCoresVoltages() {
-        RefreshHardware();
-        return cpuVoltages;
-    }
-
-    bool getIsIntel()
-    {
-        return isIntel;
-    }
-
-private:
-    Computer^ computer;
-    float^ cpuPower = gcnew float();
-	List<float>^ cpuClocks = gcnew List<float>();
-	List<float>^ cpuVoltages = gcnew List<float>();
-    List<ISensor^>^ powerSensors = gcnew List<ISensor^>();
-	List<ISensor^>^ clockSensors = gcnew List<ISensor^>();  
-	List<ISensor^>^ voltageSensors = gcnew List<ISensor^>();
-    DateTime lastUpdate;
-    TimeSpan updateInterval = TimeSpan::FromSeconds(2); // 2-second refresh interval
-	bool isIntel = true;
-
-    String^ ExtractValueBetweenSlashes(String^ input)
-    {
-        String^ pattern = "/([^/]+)/";
-        Regex^ regex = gcnew Regex(pattern);
-        Match^ match = regex->Match(input);
-
-        if (match->Success)
+    public:
+        /**
+        * @brief Constructor for the ManagedBridge class.
+        */
+        ManagedBridge()
         {
-            return match->Groups[1]->Value;
+            computer = gcnew Computer();
+            computer->IsCpuEnabled = true;
+            computer->Open();
+
+            String^ filename = "log.txt";
+
+            StreamWriter^ sw = gcnew StreamWriter(filename);
+            sw->WriteLine("Log file created at {0}", DateTime::Now);
+            sw->WriteLine(computer->GetReport());
+            sw->Close();
+
+            lastUpdate = DateTime::Now - updateInterval;
+
+            InitializeSensors();
         }
-        return nullptr;
-    }
 
-    void InitializeSensors() {
-        for (int i = 0; i < computer->Hardware->Count; i++)
+        /**
+        * @brief Gets the global power of the CPU Cores
+        * @function getCPUCoresPower
+        * @returns {float^} The power used by all CPU Cores
+        */
+        float^ getCPUCoresPower()
         {
-            IHardware^ hardware = computer->Hardware[i];
-            if (hardware->HardwareType == HardwareType::Cpu)
+            RefreshHardware();
+            return cpuPower;
+        }
+
+        /**
+        * @brief Gets the list of frequencies of each CPU Cores
+        * @function getCPUCoresClocks
+        * @returns {List<float>^} the frequencies of each CPU Cores
+        */
+        List<float>^ getCPUCoresClocks()
+        {
+            RefreshHardware();
+            return cpuClocks;
+        }
+
+        /**
+        * @brief Gets the list of voltages of each CPU Cores
+        * @function getCPUCoresVoltages
+        * @returns {List<float>^} the voltages of each CPU Cores
+        */
+        List<float>^ getCPUCoresVoltages()
+        {
+            RefreshHardware();
+            return cpuVoltages;
+        }
+
+        /**
+        * @brief Determines wheter the CPU is an Intel or not
+        * @function getIsIntel
+        * @returns {bool} true if is Intel's CPU and false otherwise
+        */
+        bool getIsIntel()
+        {
+            return isIntel;
+        }
+
+    private:
+
+        /**
+        * @var {Computer^} computer
+        * @brief 
+        */
+        Computer^ computer;
+
+        /**
+        * @var {float^} cpuPower
+        * @brief Global power of the CPU Cores
+        */
+        float^ cpuPower = gcnew float();
+
+        /**
+        * @var {List<float>^} cpuClocks
+        * @brief List of frequencies of each CPU
+        */
+        List<float>^ cpuClocks = gcnew List<float>();
+
+        /**
+        * @var {List<float>^} cpuVoltages
+        * @brief List of Voltages of each CPU
+        */
+        List<float>^ cpuVoltages = gcnew List<float>();
+
+        /**
+        * @var {List<ISensor^>^} powerSensors
+        * @brief Contains the list of power sensors
+        */
+        List<ISensor^>^ powerSensors = gcnew List<ISensor^>();
+
+        /**
+        * @var {List<ISensor^>^} clockSensors
+        * @brief Contains the list of frequency sensors
+        */
+        List<ISensor^>^ clockSensors = gcnew List<ISensor^>(); 
+
+        /**
+        * @var {List<ISensor^>^} voltageSensors
+        * @brief Contains the list of voltage sensors
+        */
+        List<ISensor^>^ voltageSensors = gcnew List<ISensor^>();
+
+        /**
+        * @var {DateTime} lastUpdate
+        * @brief Date of the last update
+        */
+        DateTime lastUpdate;
+        
+        /**
+        * @var {TimeSpan} updateInterval
+        * @brief Interval for the update of sensors
+        */
+        TimeSpan updateInterval = TimeSpan::FromSeconds(2); // 2-second refresh interval
+        
+        /**
+        * @var {bool} isIntel
+        * @brief true if is intel, false otherwise
+        */
+        bool isIntel = true;
+
+        /**
+        * @brief Generates the same string without two first slashes
+        * @param {String^} input String containing slashes
+        *
+        * @returns {String^} the same string in param without the two first slashes
+        *         Return nullptr if it doesn't work
+        */
+        String^ ExtractValueBetweenSlashes(String^ input)
+        {
+            String^ pattern = "/([^/]+)/";
+            Regex^ regex = gcnew Regex(pattern);
+            Match^ match = regex->Match(input);
+
+            if (match->Success)
             {
-                String^ identifier = ExtractValueBetweenSlashes(hardware->Identifier->ToString());
-                hardware->Update();
-                if (identifier->Contains("intel", StringComparison::OrdinalIgnoreCase))
+                return match->Groups[1]->Value;
+            }
+            return nullptr;
+        }
+
+        /**
+        * @brief Initializes all sensors
+        */
+        void InitializeSensors()
+        {
+            for (int i = 0; i < computer->Hardware->Count; i++)
+            {
+                IHardware^ hardware = computer->Hardware[i];
+                if (hardware->HardwareType == HardwareType::Cpu)
                 {
-                    for (int j = 0; j < hardware->Sensors->Length; j++)
+                    String^ identifier = ExtractValueBetweenSlashes(hardware->Identifier->ToString());
+                    hardware->Update();
+                    if (identifier->Contains("intel", StringComparison::OrdinalIgnoreCase))
                     {
-                        ISensor^ sensor = hardware->Sensors[j];
-                        if (sensor->Name->Contains("CPU Cores"))
+                        for (int j = 0; j < hardware->Sensors->Length; j++)
                         {
-                            if (sensor->SensorType == SensorType::Power)
+                            ISensor^ sensor = hardware->Sensors[j];
+                            if (sensor->Name->Contains("CPU Cores"))
                             {
-                                powerSensors->Add(sensor);
-                            }
+                                if (sensor->SensorType == SensorType::Power)
+                                {
+                                    powerSensors->Add(sensor);
+                                }
 
+                            }
                         }
                     }
-                }
-                else {
-                    isIntel = false;
-                    for (int j = 0; j < hardware->Sensors->Length; j++)
-                    {
-                        ISensor^ sensor = hardware->Sensors[j];
-                        if (sensor->Name->Contains("Core #")) {
-                            if (sensor->SensorType == SensorType::Voltage)
-                            {
-                                voltageSensors->Add(sensor);
-                            }
-                            else if (sensor->SensorType == SensorType::Clock)
-                            {
-                                clockSensors->Add(sensor);
+                    else {
+                        isIntel = false;
+                        for (int j = 0; j < hardware->Sensors->Length; j++)
+                        {
+                            ISensor^ sensor = hardware->Sensors[j];
+                            if (sensor->Name->Contains("Core #")) {
+                                if (sensor->SensorType == SensorType::Voltage)
+                                {
+                                    voltageSensors->Add(sensor);
+                                }
+                                else if (sensor->SensorType == SensorType::Clock)
+                                {
+                                    clockSensors->Add(sensor);
+                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
 
-    void RefreshHardware()
-    {
-        DateTime now = DateTime::Now;
-        if ((now - lastUpdate) >= updateInterval)
+        /**
+        * @brief performs measurements on the CPU
+        */
+        void RefreshHardware()
         {
-            lastUpdate = now;
+            DateTime now = DateTime::Now;
+            if ((now - lastUpdate) >= updateInterval)
+            {
+                lastUpdate = now;
 
-            cpuPower = 0.0f;
-            if (isIntel)
-            {
-                for each (ISensor ^ sensor in powerSensors)
+                cpuPower = 0.0f;
+                if (isIntel)
                 {
-                    if (sensor->Value.HasValue) {
-                        cpuPower = sensor->Value.Value;
+                    for each (ISensor ^ sensor in powerSensors)
+                    {
+                        if (sensor->Value.HasValue) {
+                            cpuPower = sensor->Value.Value;
+                        }
                     }
                 }
-            }
-            else
-            {
-                for each(ISensor ^ sensor in clockSensors)
+                else
                 {
-                    if (sensor->Value.HasValue) {
-                        cpuClocks->Add(sensor->Value.Value);
+                    for each(ISensor ^ sensor in clockSensors)
+                    {
+                        if (sensor->Value.HasValue) {
+                            cpuClocks->Add(sensor->Value.Value);
+                        }
                     }
-                }
-                for each(ISensor ^ sensor in voltageSensors)
-                {
-                    if (sensor->Value.HasValue) {
-                        cpuVoltages->Add(sensor->Value.Value);
+                    for each(ISensor ^ sensor in voltageSensors)
+                    {
+                        if (sensor->Value.HasValue) {
+                            cpuVoltages->Add(sensor->Value.Value);
+                        }
                     }
                 }
             }
         }
-    }
 };
 

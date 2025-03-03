@@ -1,5 +1,14 @@
-import {graphCPU,graphGPU,graphNIC,graphSD,actualDateInSecond} from './affichage-graphique.js'; 
+/**
+ * @file toCsv.js
+ * @brief This file contains JavaScript code for exporting data from graphs (CPU, GPU, NIC, SD) into a CSV file format.
+ *        It listens for a click event on the "Export CSV" button and collects graph data, then sends it to the server to generate a downloadable CSV file.
+ * @author Ecofloc's Team
+ * @lastupdate 2025-02-18
+ */
 
+import {graphCPU,graphGPU,graphNIC,graphSD,actualDateInSecond} from './graphicDisplay.js'; 
+
+// Event listener for the "Export CSV" button to trigger the export process
 document.getElementById('exportCSV').addEventListener('click', async () => {
     try {
         if (!graphCPU || !graphGPU || !graphNIC || !graphSD) {
@@ -21,7 +30,12 @@ document.getElementById('exportCSV').addEventListener('click', async () => {
     }
 });
 
-
+/**
+ * @function recupGraphData
+ * @brief Collects the graph data for CPU, GPU, NIC, and SD and adjusts the timestamp based on the monitoring start time.
+ * @param {number} startTime - The start time of the monitoring session.
+ * @return {Object} The collected graph data with adjusted timestamps.
+ */
 const recupGraphData = (startTime) => {
     return {
         CPU: Object.fromEntries(
@@ -52,6 +66,13 @@ const recupGraphData = (startTime) => {
         };
 } 
 
+/**
+ * @function launchDownload
+ * @brief Initiates the download of the generated CSV file.
+ * @param {Blob} file - The Blob object containing the CSV data.
+ * 
+ * This function creates a temporary download link and triggers the file download.
+ */
 const launchDownload = (file) => {
     try {
         
@@ -79,6 +100,13 @@ const launchDownload = (file) => {
     }
 }
 
+/**
+ * @function launchDownload
+ * @brief Initiates the download of the generated CSV file.
+ * @param {Blob} file - The Blob object containing the CSV data.
+ * 
+ * This function creates a temporary download link and triggers the file download.
+ */
 const getStartMonitoringTime = () => {
     let monitoringDuration = Math.max(
                             ...Object.values(graphCPU.data)
@@ -87,6 +115,14 @@ const getStartMonitoringTime = () => {
     return actualDateInSecond - monitoringDuration;
 }
 
+/**
+ * @function getCsv
+ * @brief Sends the collected graph data to the server to generate a CSV file.
+ * @param {Object} graph - The collected graph data.
+ * @return {Blob} The generated CSV file as a Blob object.
+ * 
+ * This function sends the graph data to a server endpoint for CSV export and retrieves the CSV file as a Blob.
+ */
 async function getCsv(graph){
     try {
 

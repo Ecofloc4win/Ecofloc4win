@@ -1,12 +1,79 @@
+/**
+ * @file server.cjs
+ * @brief Express.js server for process monitoring and execution management.
+ *
+ * This server provides APIs for executing and managing processes,
+ * handling JSON file operations, and exporting monitoring data.
+ * @author Ecofloc's Team
+ * @lastupdate 2025-02-18
+ */
+
+/**
+ * @mainpage Server Documentation
+ *
+ * @section intro_sec Introduction
+ * This server is built using Express.js and provides endpoints to execute, stop,
+ * and monitor system processes. It also manages configuration and monitoring files.
+ */
+
+/**
+ * @defgroup Config Server Configuration
+ * @{
+ */
+
+/**
+ * @var {Object} express
+ * @brief Express instance for server configuration.
+ */
 const express = require('express');
+
+/**
+ * @var {Object} exec
+ * @brief Child process execution module.
+ */
 const { exec } = require('child_process');
+
+/**
+ * @var {Function} cors
+ * @brief CORS middleware for cross-origin requests.
+ */
 const cors = require('cors');
+
+/**
+ * @var {Object} fs
+ * @brief File system module for JSON file handling.
+ */
 const fs = require('fs');
+
+/**
+ * @var {Object} path
+ * @brief Path module for managing file paths.
+ */
 const path = require('path');
 
-// Server configuration
+/** @} */ // end of Config
+
+/**
+ * @defgroup ServerVars Server Variables
+ * @{
+ */
+
+/**
+ * @var {Object} app
+ * @brief Express application instance.
+ */
 const app = express();
+
+/**
+ * @var {number} PORT
+ * @brief Server listening port.
+ */
 const PORT = 3030;
+
+/**
+ * @var {Object} PATHS
+ * @brief Paths for process execution and configuration files.
+ */
 const PATHS = {
     processJson: './Json/process.json',
     systemMonitoring: './Json/system_monitoring.json',
@@ -15,13 +82,43 @@ const PATHS = {
     pidRecup: path.join(__dirname, 'PIDRecup.exe')
 };
 
-// Process state management
+/**
+ * @var {Object|null} currentProcess
+ * @brief Tracks the current running process.
+ */
 let currentProcess = null;
+
+/**
+ * @var {boolean} processRunning
+ * @brief Indicates if a process is currently running.
+ */
 let processRunning = false;
+
+/**
+ * @var {boolean} configuratorRunning
+ * @brief Indicates if the configurator is running.
+ */
 let configuratorRunning = false;
 
-// File system utilities
+/** @} */ // end of ServerVars
+
+/**
+ * @defgroup FileUtils File Utilities
+ * @{
+ */
+
+/**
+ * @var {Object} fileUtils
+ * @brief Utility functions for file operations.
+ */
 const fileUtils = {
+    
+    /**
+     * @brief Reads a JSON file and returns its content.
+     * @function readJSON
+     * @param {string} filePath Path to the JSON file.
+     * @return {Object|null} Parsed JSON data or null in case of error.
+     */
     readJSON: (filePath) => {
         try {
             return fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf8')) : null;
@@ -31,6 +128,13 @@ const fileUtils = {
         }
     },
 
+    /**
+     * @brief Writes data to a JSON file.
+     * @function writeJSON
+     * @param {string} filePath Path to the JSON file.
+     * @param {Object} data Data to write.
+     * @return {boolean} True if successful, otherwise false.
+     */
     writeJSON: (filePath, data) => {
         try {
             fs.writeFileSync(filePath, JSON.stringify(data, null, 4), 'utf8');
@@ -41,6 +145,10 @@ const fileUtils = {
         }
     },
 
+    /**
+     * @brief Resets the system monitoring JSON file if empty.
+     * @function resetMonitoringFile
+     */
     resetMonitoringFile: () => {
         // Only reset if the file doesn't exist or is empty
         if (!fs.existsSync(PATHS.systemMonitoring) || 
@@ -49,6 +157,12 @@ const fileUtils = {
         }
     },
 
+    /**
+     * @brief Exports monitoring data to a CSV format.
+     * @function exportToCSV
+     * @param {Object} graphData The monitoring data structure.
+     * @return {string} A string containing CSV formatted data.
+     */
     exportToCSV: (graphData) => {
         console.log('Received graph data:', Object.keys(graphData));
         
@@ -102,8 +216,23 @@ const fileUtils = {
     }
 };
 
-// Process management utilities
+/** @} */ // end of FileUtils
+
+/**
+ * @defgroup ProcessUtils Process Management
+ * @{
+ */
+
+/**
+ * @var {Object} processUtils
+ * @brief Utility functions for process management.
+ */
 const processUtils = {
+
+    /**
+     * @brief Cleans up running processes.
+     * @function cleanup
+     */
     cleanup: () => {
         if (currentProcess) {
             try {
@@ -121,6 +250,12 @@ const processUtils = {
         processRunning = false;
     },
 
+    /**
+     * @brief Terminates a process by its PID.
+     * @function killProcess
+     * @param {number} pid Process ID to terminate.
+     * @param {Function} callback Callback function after termination.
+     */
     killProcess: (pid, callback) => {
         exec(`taskkill /PID ${pid} /T /F`, callback);
     }
@@ -143,7 +278,17 @@ if (fs.existsSync(srcPath)) {
 process.on('SIGINT', processUtils.cleanup);
 process.on('SIGTERM', processUtils.cleanup);
 
-// API endpoints
+/** @} */ // end of ProcessUtils
+
+/**
+ * @defgroup API Endpoints
+ * @{
+ */
+
+/**
+ * @brief Executes a new process if none is currently running.
+ * @function execute
+ */
 app.post('/execute', (req, res) => {
     if (processRunning) {
         return res.status(400).json({ success: false, message: 'Process already running' });
@@ -175,6 +320,10 @@ app.post('/execute', (req, res) => {
     }
 });
 
+/**
+ * @brief Stops the currently running process.
+ * @function stop
+ */
 app.post('/stop', (req, res) => {
     if (!processRunning || !currentProcess) {
         return res.status(400).json({ success: false, message: 'No process running' });
@@ -197,6 +346,10 @@ app.post('/stop', (req, res) => {
     }
 });
 
+/**
+ * @brief Launches the configurator application.
+ * @function configurator
+ */
 app.post('/configurator', (req, res) => {
     if (configuratorRunning) {
         return res.status(400).json({ success: false, message: 'Configurator already running' });
@@ -220,6 +373,10 @@ app.post('/configurator', (req, res) => {
     }
 });
 
+/**
+ * @brief Updates process list state in the monitoring file.
+ * @function updateProcessListState
+ */
 app.post('/updateProcessListState', (req, res) => {
     const { list, state } = req.body;
     const data = fileUtils.readJSON(PATHS.processJson);
@@ -236,6 +393,10 @@ app.post('/updateProcessListState', (req, res) => {
     res.json({ success: true, message: 'Process list updated', list });
 });
 
+/**
+ * @brief Changes the state of a specific PID.
+ * @function changePidState
+ */
 app.post('/changePidState', (req, res) => {
     const { processName, pid, state } = req.body;
     const data = fileUtils.readJSON(PATHS.processJson);
@@ -256,6 +417,10 @@ app.post('/changePidState', (req, res) => {
     res.json({ success: true, message: 'PID state updated' });
 });
 
+/**
+ * @brief Changes the state of multiple PIDs.
+ * @function changeListePidState
+ */
 app.post('/changeListePidState', (req, res) => {
     const { list, state } = req.body;
     console.log('Length receive :', list.length);
@@ -276,6 +441,10 @@ app.post('/changeListePidState', (req, res) => {
     res.json({ message: 'Liste reçue avec succès', receivedList: list });
 });
 
+/**
+ * @brief Provides real-time updates via Server-Sent Events.
+ * @function events
+ */
 app.get('/events', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -313,6 +482,10 @@ app.get('/events', (req, res) => {
     });
 });
 
+/**
+ * @brief Exports monitoring data to CSV format.
+ * @function exportCSV
+ */
 app.post('/export-csv', (req, res) => {
     try {
         const graphData = req.body;
@@ -336,6 +509,10 @@ app.post('/export-csv', (req, res) => {
     }
 });
 
+/**
+ * @brief Updates the process monitoring file.
+ * @function update
+ */
 app.post('/update', (req, res) => {
     try {
         const command = `"${PATHS.pidRecup}" ${PATHS.processJson}`;
@@ -360,7 +537,12 @@ app.post('/update', (req, res) => {
     }
 });
 
-// Start server
+/** @} */ // end of API
+
+/**
+ * @brief Starts the Express.js server.
+ * @function startServer
+ */
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     fileUtils.resetMonitoringFile();

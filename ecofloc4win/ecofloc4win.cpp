@@ -52,36 +52,43 @@
 using namespace ftxui;
 
 /**
+ * @var {std::vector<MonitoringData>} monitoringData
  * @brief The array that content all the energy used by each component for each process
  */
 std::vector<MonitoringData> monitoringData = {};
 
 /**
+ * @var {std::mutex} dataMutex
  * @brief Protects shared data
  */
 std::mutex dataMutex;
 
 /**
+ * @var {std::atomic<bool>} newDataCpu
  * @brief Stores CPU newest data
  */
 std::atomic<bool> newDataCpu(false);
 
 /**
+ * @var {std::atomic<bool>} newDataGpu
  * @brief Stores GPU newest data
  */
 std::atomic<bool> newDataGpu(false);
 
 /**
+ * @var {std::atomic<bool>} newDataSd
  * @brief Stores SD newest data
  */
 std::atomic<bool> newDataSd(false);
 
 /**
+ * @var {std::atomic<bool>} newDataNic
  * @brief Stores NIC newest data
  */
 std::atomic<bool> newDataNic(false);
 
 /**
+ * @var {std::unordered_map<std::string, int>} actions
  * @brief List of action you can do when using ecofloc
  */
 std::unordered_map<std::string, int> actions =
@@ -95,101 +102,101 @@ std::unordered_map<std::string, int> actions =
 };
 
 /**
- * 
- *
- * can be replace
+ * @var {std::unordered_map<std::string, std::pair<std::vector<process>, bool>>} comp
+ * @brief Stores all process for each component
  */
 std::unordered_map<std::string, std::pair<std::vector<process>, bool>> comp = { {"CPU", {{}, false}}, {"GPU", {{}, false} }, {"SD", {{}, false }}, {"NIC", {{}, false }} };
 
 /**
+ * @var {std::atomic<int>} interval
  * @brief The time interval between 2 calculations in millisecond
  */
 std::atomic<int> interval = 500;
 
 /**
  * @brief Reads the command written by the user and called the right function
- * 
- * @param commandHandle the command written by the user
+ * @function readCommand
+ * @param {std::string} commandHandle - the command written by the user
  */
 void readCommand(std::string commandHandle);
 
 /**
  * @brief Adds a process to monitor on the chosen component
- *
- * @param pid The ID of the process to add
- * @param component The name of the component where the pid is added
+ * @function addProcPid
+ * @param {std::string} pid - The ID of the process to add
+ * @param {std::string} component - The name of the component where the pid is added
  */
 void addProcPid(const std::string& pid, const std::string& component);
 
 /**
  * @brief Adds a process to monitor on the chosen component
- *
- * @param name The name of the process to add
- * @param component The name of the component where the pid is added
+ * @function addProcName
+ * @param {std::string} name - The name of the process to add
+ * @param {std::string} component - The name of the component where the pid is added
  */
 void addProcName(const std::string& name, const std::string& component);
 
 /**
  * @brief Removes a process from monitoring
- *
- * @param lineNumber The number of the line that match the process to remove
+ * @function removeProcByLineNumber
+ * @param {std::string} lineNumber - The number of the line that match the process to remove
  */
 void removeProcByLineNumber(const std::string& lineNumber) noexcept;
 
 /**
  * @brief Enables the monitoring of the component for a specified process
- *
- * @param lineNumber The number of the line that match the process wanted
- * @param component The name of the component to enable
+ * @function enable
+ * @param {std::string} lineNumber - The number of the line that match the process wanted
+ * @param {std::string} component - The name of the component to enable
  */
 void enable(const std::string& lineNumber, const std::string& component);
 
 /**
  * @brief Disables the monitoring of the component for a specified process
- *
- * @param lineNumber The number of the line that match the process wanted
- * @param component The name of the component to disable
+ * @function disable
+ * @param {std::string} lineNumber - The number of the line that match the process wanted
+ * @param {std::string} component - The name of the component to disable
  */
 void disable(const std::string& lineNumber, const std::string& component);
 
 /**
  * @brief Gets the localized counter path for a given process name and counter name to be used in PDH functions
  * 		  and avoid hardcoding the counter path for each language.
- *
- * @param processName The name of the process
- * @param counterName The name of the counter
- * @return wstring the localized counter path for the process
+ * @function getLocalizedCounterPath
+ * @param {std::wstring} processName - The name of the process
+ * @param {std::string} counterName - The name of the counter
+ * @returns {std::wstring} the localized counter path for the process
  */
 std::wstring getLocalizedCounterPath(const std::wstring& processName, const std::string& counterName);
 
 /**
  * @brief Retrieves the name of the Process thank to its ID
- *
- * @param processID The ID of the Process
- * @return wstring the name of the Process
+ * @function getProcessNameByPID
+ * @param {DWORD} processID - The ID of the Process
+ * @returns {std::wstring} the name of the Process
  */
 std::wstring getProcessNameByPID(DWORD processID);
 
 /**
  * @brief Gets the index of a counter in the registry based on its name.
- *
- * @param counterName The name of the counter
- * @return DWORD the Index of the counter
+ * @function getCounterIndex
+ * @param {std::string} counterName - The name of the counter
+ * @returns {DWORD} the Index of the counter
  */
 DWORD getCounterIndex(const std::string& counterName);
 
 /**
  * @brief Gets the name of the instance for a given process ID.
- * 
- * @param targetPID The pid
- * @return wstring the name of the instance
+ * @function getInstanceForPID
+ * @param {int} targetPID - The pid
+ * @returns {std::wstring} the name of the instance
  */
 std::wstring getInstanceForPID(int targetPID);
 
 /**
  * @brief Generates all rows of the table to show in the terminal
- * 
- * @return vector of vectors of strings the results' table 
+ * @function createTableRows
+ * @returns {std::vector<std::vector<std::string>>} the results' table 
  */
 auto createTableRows() -> std::vector<std::vector<std::string>>
 {
@@ -230,9 +237,9 @@ auto createTableRows() -> std::vector<std::vector<std::string>>
 
 /**
  * @brief Shows the table in the terminal
- *
- * @param scrollPosition The current position of the scroll
- * @return Element the render of the complete table 
+ * @function renderTable
+ * @param {int} scrollPosition - The current position of the scroll
+ * @return {Element} the render of the complete table 
  */
 auto renderTable(int scrollPosition) -> Element
 {
@@ -267,6 +274,9 @@ auto renderTable(int scrollPosition) -> Element
 	return table.Render() | flex;
 }
 
+/**
+ * @brief The main program
+ */
 int main()
 {
 	std::string input;
@@ -1167,7 +1177,6 @@ void addProcName(const std::string& name, const std::string& component)
 		std::cerr << "Error: No processes found with name " << name << "." << std::endl;
 	}
 }
-
 
 void removeProcByLineNumber(const std::string& lineNumber) noexcept
 {
